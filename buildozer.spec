@@ -5,7 +5,7 @@ package.domain = org.test
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 1.0.0
-requirements = python3,kivy==2.1.0,kivymd==1.1.1,pillow
+requirements = python3,kivy==2.1.0,kivymd==1.1.1,pillow,cython==0.29.33
 android.ndk_api = 24
 android.ndk = 25b
 icon.filename = %(source.dir)s/data/icon.png
