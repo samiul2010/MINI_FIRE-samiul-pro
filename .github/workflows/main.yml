@@ -18,19 +18,16 @@ jobs:
       with:
         python-version: '3.10'
 
-     - name: Install dependencies
-       run: |
-         python -m pip install --upgrade pip
-         pip install buildozer
-         pip install cython
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer
+        pip install cython
         
-        sudo apt-get update
-        sudo apt-get install -y \
-         git zip unzip openjdk-17-jdk python3-pip autoconf automake libtool m4 \
-         build-essential libltdl-dev libffi-dev libssl-dev python3-dev \
-         pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake
-        sudo autoupdate
-        sudo libtoolize --force
+       
+       
+         
+         pip install libtoolize --force
 
     - name: Build with Buildozer
       run: |
