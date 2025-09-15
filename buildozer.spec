@@ -21,7 +21,7 @@ android.copy_libs = 1
 android.accept_sdk_license = True
 
 # Start.io App ID (REPLACE WITH YOUR ACTUAL START.IO APP ID, e.g., '123456789')
-android.meta_data = com.startapp.sdk.APPLICATION_ID="YOUR_STARTAPP_APP_ID"
+android.meta_data = com.startapp.sdk.APPLICATION_ID="207965871"
 
 [buildozer]
 log_level = 2
