@@ -1,62 +1,60 @@
 [app]
 # (str) Title of your application
 title = Mini Fire
-# (str) Package name (one word, no special chars)
-package.name = mini_fire
+
+# (str) Package name
+package.name = minifire
+
 # (str) Package domain (reverse-DNS style)
 package.domain = org.kivy
-# (str) Source code directory (where main.py lives)
+
+# (str) Source code directory
 source.dir = .
-# (list) Include typical resource extensions
+
+# (list) Source files to include
 source.include_exts = py,png,jpg,kv,atlas
 
-# (str) Application version
+# (str) Application versioning
 version = 1.0
 
-# (list) Application requirements (Python modules)
-# Based on imports: Kivy framework and pyjnius for Java calls
-requirements = python3,kivy,pyjnius
+# (list) Application requirements
+# (Python standard libs যেমন os, sys, sqlite3 ইত্যাদি আলাদা করে লিখতে হয় না)
+requirements = python3,kivy,pyjnius,kivymd,pillow
 
-# (list) Presplash (optional, skip if not used)
-# presplash.filename = %(source.dir)s/data/presplash.png
-
-# (str) Orientation (portrait or landscape; choose per app design)
+# (str) Supported orientation (portrait, landscape or all)
 orientation = portrait
 
-# (bool) Fullscreen mode (hide status bar). 0 = disabled (show bar)
+# (bool) Indicate if the application should be fullscreen
 fullscreen = 0
 
-# (list) Permissions (needed for network and storage access):contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}
-android.permissions = INTERNET, ACCESS_NETWORK_STATE, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+# (list) Permissions
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 
-# (list) Android app meta-data (key=value format).
-# Add Start.io (StartApp) Application ID as metadata:contentReference[oaicite:3]{index=3}.
-# Replace YOUR_STARTAPP_APP_ID with your actual app ID.
+# (list) Android meta-data
+# ⚠️ আপনার আসল Start.io App ID দিয়ে নিচের placeholder বদলে দিন
 android.meta_data = com.startapp.sdk.APPLICATION_ID=YOUR_STARTAPP_APP_ID
 
-# (list) Android Gradle dependencies.
-# Include the Start.io (StartApp) in-app SDK (via Maven Central):contentReference[oaicite:4]{index=4}.
+# (list) Gradle dependencies (Start.io SDK যোগ করা হলো)
 android.gradle_dependencies = "com.startapp:inapp-sdk:5.+"
 
-# (list) Android Gradle repositories.
-# Ensure the StartApp Maven repository is available (if needed):contentReference[oaicite:5]{index=5}.
+# (list) Gradle repositories
 android.gradle_repositories = "mavenCentral()", "maven { url 'https://startappdev.bintray.com/maven' }"
 
-# (str) Android API to use (target SDK; 24 as requested)
+# (int) Targeted Android API (workflow এ আমরা platforms;android-24 ইনস্টল করছি)
 android.api = 24
-# (int) Minimum API your APK will support (must be ≥21 for arm64-v8a):contentReference[oaicite:6]{index=6}
+
+# (int) Minimum API (arm64-v8a এর জন্য অন্তত 21 দরকার)
 android.minapi = 21
-# (int) Android NDK API (should match minapi for stability):contentReference[oaicite:7]{index=7}
+
+# (int) Android NDK API (minsdk এর সাথে match করা জরুরি)
 android.ndk_api = 21
 
-# (list) Android architectures to build (only 64-bit ARM as requested):contentReference[oaicite:8]{index=8}
+# (list) Architectures to build (শুধু 64-bit ARM)
 android.archs = arm64-v8a
 
-# (bool) Android auto backup feature (Android API ≥23)
+# (bool) Allow app backup
 android.allow_backup = True
 
 [buildozer]
-# (int) Log level (0=error only, 1=info, 2=debug)
 log_level = 2
-# (bool) Warn if run as root (0=no, 1=yes)
 warn_on_root = 1
