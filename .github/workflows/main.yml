@@ -47,12 +47,22 @@ jobs:
         Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.23/x64
         LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.9.23/x64/lib
 
+    - name: Install Android SDK (with licenses)
+      run: |
+        mkdir -p $HOME/.buildozer/android/platform
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/.buildozer/android/platform
+        mv $HOME/.buildozer/android/platform/cmdline-tools $HOME/.buildozer/android/platform/cmdline-tools-tmp
+        mkdir -p $HOME/.buildozer/android/platform/cmdline-tools/latest
+        mv $HOME/.buildozer/android/platform/cmdline-tools-tmp/* $HOME/.buildozer/android/platform/cmdline-tools/latest/
+        yes | $HOME/.buildozer/android/platform/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk --licenses
+        yes | $HOME/.buildozer/android/platform/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "platforms;android-24" "build-tools;29.0.3"
+
     - name: Set up Android NDK
       run: |
-        mkdir -p /home/runner/.buildozer/android/platform
         wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        unzip -q android-ndk-r25b-linux.zip -d /home/runner/.buildozer/android/platform
-        mv /home/runner/.buildozer/android/platform/android-ndk-r25b /home/runner/.buildozer/android/platform/android-ndk
+        unzip -q android-ndk-r25b-linux.zip -d $HOME/.buildozer/android/platform
+        mv $HOME/.buildozer/android/platform/android-ndk-r25b $HOME/.buildozer/android/platform/android-ndk
       env:
         ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk
 
@@ -63,7 +73,7 @@ jobs:
         mkdir -p ~/.cache
         buildozer -v android debug
       env:
-        ANDROID_SDK_ROOT: $ANDROID_HOME
+        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
         ANDROID_NDK_ROOT: /home/runner/.buildozer/android/platform/android-ndk
 
     - name: Upload APK
