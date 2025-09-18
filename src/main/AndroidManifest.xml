@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.kivy.minifire">
+
+    <application>
+        <!-- Start.io SDK App ID -->
+        <meta-data
+            android:name="com.startapp.sdk.APPLICATION_ID"
+            android:value="207965871" />
+
+        <!-- Optional: Banner/Interstitial auto-handling -->
+        <activity
+            android:name="com.startapp.sdk.adsbase.activities.OverlayActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@android:style/Theme.Translucent" />
+        <activity
+            android:name="com.startapp.sdk.adsbase.activities.FullScreenActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+    </application>
+</manifest>
