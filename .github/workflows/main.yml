@@ -39,24 +39,19 @@ jobs:
         python -m pip install --user --upgrade pip
         pip install --user buildozer==1.5.0 cython==0.29.33
         pip install --user kivy==2.1.0 kivymd==1.1.1 pillow
-      env:
-        pythonLocation: /opt/hostedtoolcache/Python/3.9.23/x64
-        PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.9.23/x64/lib/pkgconfig
-        Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.23/x64
-        Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.23/x64
-        Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.9.23/x64
-        LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.9.23/x64/lib
 
     - name: Install Android SDK (with licenses)
       run: |
-        mkdir -p $HOME/.buildozer/android/platform
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/.buildozer/android/platform
-        mv $HOME/.buildozer/android/platform/cmdline-tools $HOME/.buildozer/android/platform/cmdline-tools-tmp
-        mkdir -p $HOME/.buildozer/android/platform/cmdline-tools/latest
-        mv $HOME/.buildozer/android/platform/cmdline-tools-tmp/* $HOME/.buildozer/android/platform/cmdline-tools/latest/
-        yes | $HOME/.buildozer/android/platform/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk --licenses
-        yes | $HOME/.buildozer/android/platform/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "platforms;android-24" "build-tools;29.0.3"
+        unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
+        mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools/* $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/
+
+        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk --licenses
+        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "platforms;android-24" "build-tools;29.0.3" "platform-tools"
+      env:
+        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
 
     - name: Set up Android NDK
       run: |
@@ -69,8 +64,6 @@ jobs:
     - name: Build with Buildozer
       run: |
         export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.configureondemand=true -Dorg.gradle.parallel=true"
-        export USE_CCACHE=1
-        mkdir -p ~/.cache
         buildozer -v android debug
       env:
         ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
