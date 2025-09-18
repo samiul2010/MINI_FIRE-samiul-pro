@@ -2,85 +2,36 @@ name: Build Kivy App
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
   build-android:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        arch: [arm64-v8a]
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          git zip unzip openjdk-17-jdk python3-pip autoconf automake libtool m4 \
-          build-essential libltdl-dev libffi-dev libssl-dev python3-dev \
-          pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake
-        sudo libtoolize --force
-      env:
-        DEBIAN_FRONTEND: noninteractive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip
+          pip install --upgrade pip
+          pip install buildozer cython
 
-    - name: Install Buildozer and dependencies
-      run: |
-        python -m pip install --user --upgrade pip
-        pip install --user buildozer==1.5.0 cython==0.29.33
-        pip install --user kivy==2.1.0 kivymd==1.1.1 pillow
+      - name: Build APK
+        run: |
+          buildozer android debug
 
-    - name: Install Android SDK (with licenses)
-      run: |
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip -q commandlinetools-linux-9477386_latest.zip -d $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-        mv $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools/* $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/
-
-        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk --licenses
-        yes | $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "platforms;android-24" "build-tools;29.0.3" "platform-tools"
-        mkdir -p $HOME/.buildozer/android/platform/android-sdk/tools/bin
-        ln -s $HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager $HOME/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-
-      env:
-        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-
-    - name: Set up Android NDK
-      run: |
-        wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        unzip -q android-ndk-r25b-linux.zip -d $HOME/.buildozer/android/platform
-        mv $HOME/.buildozer/android/platform/android-ndk-r25b $HOME/.buildozer/android/platform/android-ndk
-      env:
-        ANDROID_NDK_HOME: /home/runner/.buildozer/android/platform/android-ndk
-
-    - name: Build with Buildozer
-      run: |
-        export GRADLE_OPTS="-Dorg.gradle.daemon=false -Dorg.gradle.configureondemand=true -Dorg.gradle.parallel=true"
-        buildozer -v android debug
-      env:
-        ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-        ANDROID_NDK_ROOT: /home/runner/.buildozer/android/platform/android-ndk
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: myapp-${{ matrix.arch }}.apk
-        path: bin/*.apk
-        retention-days: 30
-
-    - name: Cleanup
-      if: always()
-      run: |
-        rm -rf .buildozer
-        rm -rf ~/.buildozer
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: MiniFire-APK
+          path: bin/*.apk
