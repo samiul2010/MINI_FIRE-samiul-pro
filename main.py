@@ -1036,6 +1036,7 @@ class ProfileScreen(Screen):
 
 # Main App
 class FreeFireMobileApp(App):
+    
     def build(self):
         # Initialize game data
         self.game_data = GameData()
@@ -1058,6 +1059,12 @@ class FreeFireMobileApp(App):
         sm.add_widget(ProfileScreen(self.game_data, name='profile'))
         
         return sm
+    def load_interstitial_ad(self):
+        return True  # Dummy loader, real SDK auto-handles it
+
+    def load_rewarded_ad(self):
+        return True  # Always return True for now
+
 
 if __name__ == '__main__':
     FreeFireMobileApp().run()
