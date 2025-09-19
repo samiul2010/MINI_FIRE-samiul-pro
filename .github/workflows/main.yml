@@ -1,40 +1,126 @@
-name: Build Kivy APK
+name: Build samiil apk
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.10'
+  BUILD_DIR: ${{ github.workspace }}
+  # storage dir must NOT contain spaces or comments
+  STORAGE_DIR: ${{ github.workspace }}/.buildozer/android/platform
 
 jobs:
   build_apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          python-version: '3.10'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Install Dependencies
+      - name: Install system packages required for Buildozer
         run: |
-          python -m pip install --upgrade pip
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            git python3-dev build-essential zip unzip openjdk-17-jdk \
+            zlib1g-dev libncurses5 libffi-dev libssl-dev libsqlite3-dev \
+            libjpeg-dev
+        shell: bash
+
+      - name: Setup Android SDK (cmdline-tools + accept licenses)
+        uses: android-actions/setup-android@v3
+        with:
+          # accept licenses so sdkmanager won't block
+          accept-android-sdk-licenses: 'true'
+          # install the commonly needed packages (adjust if you want other versions)
+          packages: 'platform-tools,platforms;android-33,build-tools;36.1.0'
+      - name: Show sdkmanager path (debug)
+        run: |
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          which sdkmanager || true
+          sdkmanager --version || true
+        shell: bash
+
+      - name: Create storage dir (no spaces)
+        run: |
+          mkdir -p "${{ env.STORAGE_DIR }}/build-arm64-v8a"
+          mkdir -p "${{ env.STORAGE_DIR }}/build-armeabi-v7a"
+        shell: bash
+
+      - name: Set up Python & pip packages
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Upgrade pip and install Buildozer + dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # pin cython to stable version for p4a compatibility
           pip install cython==0.29.36
-          pip install buildozer
+          # install buildozer and python-for-android; pin if you have known-good versions
+          pip install --upgrade buildozer
+          # optional: install python-for-android explicitly to reduce surprises
+          pip install --upgrade python-for-android
+        shell: bash
 
-      - name: Install Buildozer Requirements
+      - name: Ensure sdkmanager licenses accepted (defensive)
         run: |
-          sudo apt update
-          sudo apt install -y openjdk-17-jdk python3-dev git zip unzip
+          # If sdkmanager is available, accept licenses (defensive; setup-android already tried to accept)
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager --licenses || true
+          fi
+        shell: bash
 
-      - name: Build APK
+      - name: Prepare buildozer.spec (sanity checks)
         run: |
-          buildozer android debug
+          # Ensure buildozer.spec exists in repo root
+          if [ ! -f "${{ github.workspace }}/buildozer.spec" ]; then
+            echo "ERROR: buildozer.spec not found in repository root." >&2
+            exit 1
+          fi
+          # Defensive: remove any trailing comments accidentally inserted into build flags
+          # (No editing unless needed -- this just alerts)
+          echo "buildozer.spec found."
+        shell: bash
 
-      - name: Upload APK
+      - name: Run Buildozer (clean + android debug)
+        env:
+          # Ensure Buildozer knows where to place the storage (no spaces)
+          ANDROIDSDK: ${{ env.STORAGE_DIR }}/android-sdk
+          ANDROIDNDK: ${{ env.STORAGE_DIR }}/android-ndk
+          # Force buildozer to use our storage dir
+          BUILDOZER_STORAGE_DIR: ${{ env.STORAGE_DIR }}
+        run: |
+          set -euo pipefail
+          cd "${{ github.workspace }}"
+          # clean any previous partial builds (safe)
+          buildozer --verbose --storage-dir "${{ env.STORAGE_DIR }}" android clean || true
+          # run the build (debug). Do NOT put comments inside the command.
+          buildozer --verbose --storage-dir "${{ env.STORAGE_DIR }}" android debug
+        shell: bash
+
+      - name: List built artifacts (debug)
+        if: always()
+        run: |
+          echo "Listing bin/ and .buildozer/bin"
+          ls -la "${{ github.workspace }}/bin" || true
+          ls -la "${{ env.STORAGE_DIR }}" || true
+        shell: bash
+
+      - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: my_app_apk
-          path: bin/*.apk
+          name: app-apk
+          path: |
+            ${{ github.workspace }}/bin/*.apk
+            ${{ github.workspace }}/.buildozer/android/platform/*/bin/*.apk
+          retention-days: 7
