@@ -1,24 +1,33 @@
 [app]
+
 title = Mini Fire
 package.name = minifire
 package.domain = org.kivy
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,db,json
+source.include_exts = py,png,jpg,kv,atlas
+
 version = 1.0
+
 requirements = python3,kivy,pyjnius
+
 orientation = portrait
-fullscreen = 1
+fullscreen = 0
 
-# Permissions
-android.permissions = INTERNET,ACCESS_NETWORK_STATE,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
-
-# Android API
 android.api = 24
 android.minapi = 21
-android.arch = arm64-v8a
+android.archs = arm64-v8a   # ✅ Play Store ready (64-bit)
 
-# Start.io SDK যোগ করা
+android.permissions = INTERNET,ACCESS_NETWORK_STATE,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
+
+# Start.io Ads SDK dependency
 android.gradle_dependencies = com.startapp:inapp-sdk:5.+
 
-# Custom AndroidManifest যোগ করার জন্য
+# যদি আপনার custom java code থাকে
 android.add_src = src
+
+# Icon
+icon.filename = icon.png
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
