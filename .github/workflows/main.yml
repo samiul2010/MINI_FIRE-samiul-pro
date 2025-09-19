@@ -29,10 +29,7 @@ jobs:
           sudo apt update
           sudo apt install -y openjdk-17-jdk python3-dev git zip unzip
 
-      - name: Initialize Buildozer
-        run: |
-          buildozer init
-          buildozer android debug
+      - name: I
 
       - name: Build APK
         run: |
