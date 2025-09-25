@@ -1,4 +1,4 @@
-name: Build Kivy Android App (Final Guaranteed Fix)
+name: Build Kivy Android App (The Spec File Fix)
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       with:
         python-version: '3.9'
 
-    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা
+    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (এবং লাইসেন্স গ্রহণ)
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
@@ -38,14 +38,9 @@ jobs:
         pip install buildozer
 
     # ধাপ ৬: Buildozer দিয়ে অ্যান্ড্রয়েড ডিবাগ APK তৈরি করা
-    # --- এটিই মূল সমাধান: Buildozer কে আগে থেকে ইনস্টল করা SDK ব্যবহারে বাধ্য করা ---
+    # এখন আর export কমান্ডের প্রয়োজন নেই কারণ spec ফাইল সবকিছু নিয়ন্ত্রণ করছে
     - name: Build with Buildozer
       run: |
-        # ANDROID_SDK_ROOT এবং ANDROID_NDK_ROOT ভেরিয়েবলগুলো Buildozer-কে SDK পুনরায় ডাউনলোড করা থেকে বিরত রাখে।
-        # $ANDROID_HOME এবং $ANDROID_NDK_HOME ভেরিয়েবলগুলো আগের ধাপে (Setup Android SDK) সেট করা হয়েছে।
-        export ANDROID_SDK_ROOT=$ANDROID_HOME
-        export ANDROID_NDK_ROOT=$ANDROID_NDK_HOME
-        
         buildozer --version
         buildozer --verbose android debug
 
