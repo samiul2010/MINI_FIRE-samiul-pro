@@ -63,7 +63,7 @@ android.ndk = 26c
 
 # (str) python-for-android এর ব্রাঞ্চ
 # master ব্রাঞ্চে লেটেস্ট ফিক্সগুলো থাকে
-p4a.branch = master
+p4a.branch = main
 
 # (bool) রিলিজ বিল্ডের জন্য বিভক্ত AAB তৈরি করবে কিনা
 # গুগল প্লে স্টোরে আপলোড করার জন্য এটি True রাখুন
