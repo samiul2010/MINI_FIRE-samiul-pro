@@ -1,8 +1,8 @@
-name: Build Kivy Android App (Final Corrected Version)
+name: Build Kivy Android App (Docker-Based Final Attempt)
 
 on:
   push:
-    branches: [ "main" ] # আপনার ব্রাঞ্চের নাম 'main'
+    branches: [ "main" ]
 
 jobs:
   build-android:
@@ -12,23 +12,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Java (JDK 17)
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+    # আমরা আর Java বা Python সেটআপ করব না, কারণ সবকিছু ডকার ইমেজের ভেতরেই আছে।
 
-    - name: Install buildozer and dependencies
+    - name: Build with Docker and accept licenses
       run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip build-essential git python3-dev libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0
-        pip install "cython==0.29.36" buildozer
-
-    - name: Build with Buildozer and accept licenses
-      run: |
-        # Buildozer প্রথমবার চালানোর সময় সঠিক spec ফাইল অনুযায়ী SDK ডাউনলোড করবে
-        # 'yes' কমান্ডটি স্বয়ংক্রিয়ভাবে লাইসেন্স গ্রহণ করবে
-        yes | buildozer --verbose android debug
+        # Kivy-র অফিসিয়াল অ্যান্ড্রয়েড বিল্ড ডকার ইমেজটি ব্যবহার করা হচ্ছে
+        docker run --rm \
+          -v "$(pwd)":/app \
+          kivy/buildozer:latest \
+          bash -c "yes | buildozer --verbose android debug"
 
     - name: Upload Artifact (APK)
       uses: actions/upload-artifact@v4
