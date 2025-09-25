@@ -1,25 +1,14 @@
-name: Build Kivy Android App (The Simple Way)
+name: Build Kivy Android App (Final Corrected Version)
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ] # আপনার ব্রাঞ্চের নাম 'main'
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
 
     steps:
-    # ... আগের ধাপগুলো একই থাকবে ...
-
-    - name: Build with Buildozer and accept licenses
-      run: |
-        # --- নতুন এবং গুরুত্বপূর্ণ লাইন ---
-        # পুরনো এবং সম্ভাব্য সমস্যাযুক্ত বিল্ড ফাইলগুলো ডিলিট করে দেবে
-        buildozer android clean
-        
-        # এখন একটি পরিষ্কার পরিবেশ থেকে বিল্ড শুরু হবে
-        yes | buildozer --verbose android debug
-        
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -37,7 +26,13 @@ jobs:
 
     - name: Build with Buildozer and accept licenses
       run: |
-        # Buildozer প্রথমবার চালানোর সময় SDK ডাউনলোড করবে
-        # আমরা এই প্রক্রিয়াটিকে একটি স্ক্রিপ্টের মাধ্যমে চালাব যা স্বয়ংক্রিয়ভাবে 'y' চাপবে
+        # Buildozer প্রথমবার চালানোর সময় সঠিক spec ফাইল অনুযায়ী SDK ডাউনলোড করবে
+        # 'yes' কমান্ডটি স্বয়ংক্রিয়ভাবে লাইসেন্স গ্রহণ করবে
         yes | buildozer --verbose android debug
+
+    - name: Upload Artifact (APK)
+      uses: actions/upload-artifact@v4
+      with:
+        name: freefire-mobile-apk
+        path: bin/*.apk
         
