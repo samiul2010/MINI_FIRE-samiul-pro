@@ -29,7 +29,7 @@ jobs:
     # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (সর্বশেষ সংস্করণ ব্যবহার করে)
     # --- এটিই মূল পরিবর্তন: v3 থেকে v4 এ আপগ্রেড করা হয়েছে ---
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v4.0.0 # <--- এখানে পরিবর্তন করা হয়েছে
+      uses: android-actions/setup-android@v4 # <--- এখানে পরিবর্তন করা হয়েছে
 
     # ধাপ ৫: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
     - name: Install dependencies
