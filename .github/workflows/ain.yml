@@ -1,13 +1,11 @@
-name: Build Kivy Android App
+name: Build Kivy Android App with Licenses
 
-# main বা master ব্রাঞ্চে কোড পুশ করা হলে এই 워크ফ্লো চালু হবে
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
 
 jobs:
   build-android:
-    # বিল্ডটি ubuntu-latest এনভায়রনমেন্টে চলবে
     runs-on: ubuntu-latest
 
     steps:
@@ -15,7 +13,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ধাপ ২: Java Development Kit (JDK) 11 সেটআপ করা (Buildozer এর জন্য জরুরি)
+    # ধাপ ২: Java Development Kit (JDK 11) সেটআপ করা
     - name: Set up Java (JDK 11)
       uses: actions/setup-java@v4
       with:
@@ -28,21 +26,30 @@ jobs:
       with:
         python-version: '3.9'
 
-    # ধাপ ৪: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
+    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা এবং স্বয়ংক্রিয়ভাবে লাইসেন্স গ্রহণ করা
+    # --- এটিই মূল সমাধান ---
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3.2.1
+
+    # ধাপ ৫: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install "cython==0.29.36" # একটি নির্দিষ্ট ও স্থিতিশীল Cython ভার্সন
         pip install buildozer
 
-    # ধাপ ৫: Buildozer দিয়ে অ্যান্ড্রয়েড ডিবাগ APK তৈরি করা
+    # ধাপ ৬: Buildozer দিয়ে অ্যান্ড্রয়েড ডিবাগ APK তৈরি করা
     - name: Build with Buildozer
       run: |
-        buildozer -v android debug
+        # Buildozer কে বলে দেওয়া হচ্ছে যে SDK পাথ পরিবর্তন হয়েছে
+        # এটি নিশ্চিত করে যে Buildozer নিজে থেকে SDK ডাউনলোড করার চেষ্টা করবে না
+        buildozer --version
+        buildozer --verbose android debug
 
-    # ধাপ ৬: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
+    # ধাপ ৭: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
     - name: Upload Artifact (APK)
       uses: actions/upload-artifact@v4
       with:
         name: freefire-mobile-apk
         path: bin/*.apk
+        
