@@ -1,8 +1,8 @@
-name: Build Kivy Android App with Licenses
+name: Build Kivy Android App (Final Version)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
   build-android:
@@ -13,12 +13,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ধাপ ২: Java Development Kit (JDK 11) সেটআপ করা
-    - name: Set up Java (JDK 11)
+    # ধাপ ২: Java Development Kit (JDK 17) সেটআপ করা
+    - name: Set up Java (JDK 17)
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11'
+        java-version: '17'
 
     # ধাপ ৩: Python 3.9 সেটআপ করা
     - name: Set up Python
@@ -26,23 +26,21 @@ jobs:
       with:
         python-version: '3.9'
 
-    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা এবং স্বয়ংক্রিয়ভাবে লাইসেন্স গ্রহণ করা
-    # --- এটিই মূল সমাধান ---
+    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (সর্বশেষ সংস্করণ ব্যবহার করে)
+    # --- এটিই মূল পরিবর্তন: v3 থেকে v4 এ আপগ্রেড করা হয়েছে ---
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3.2.1
+      uses: android-actions/setup-android@v4.0.0 # <--- এখানে পরিবর্তন করা হয়েছে
 
     # ধাপ ৫: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install "cython==0.29.36" # একটি নির্দিষ্ট ও স্থিতিশীল Cython ভার্সন
+        pip install "cython==0.29.36"
         pip install buildozer
 
     # ধাপ ৬: Buildozer দিয়ে অ্যান্ড্রয়েড ডিবাগ APK তৈরি করা
     - name: Build with Buildozer
       run: |
-        # Buildozer কে বলে দেওয়া হচ্ছে যে SDK পাথ পরিবর্তন হয়েছে
-        # এটি নিশ্চিত করে যে Buildozer নিজে থেকে SDK ডাউনলোড করার চেষ্টা করবে না
         buildozer --version
         buildozer --verbose android debug
 
