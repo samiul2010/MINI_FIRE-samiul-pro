@@ -1,4 +1,4 @@
-name: Build Kivy Android App (Final Stable Version)
+name: Build Kivy Android App (Final Guaranteed Fix)
 
 on:
   push:
@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ধাপ ১: আপনার রিপোজিটরির কোড চেকআউট করা
+    # ধাপ ১: কোড চেকআউট করা
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # ধাপ ২: Java Development Kit (JDK 17) সেটআপ করা
+    # ধাপ ২: Java (JDK 17) সেটআপ করা
     - name: Set up Java (JDK 17)
       uses: actions/setup-java@v4
       with:
@@ -26,12 +26,11 @@ jobs:
       with:
         python-version: '3.9'
 
-    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (একটি নির্দিষ্ট এবং স্থিতিশীল সংস্করণ ব্যবহার করে)
-    # --- এটিই মূল সমাধান: একটি নির্দিষ্ট সংস্করণ নম্বর ব্যবহার করা হচ্ছে ---
+    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v3 # <--- এখানে পরিবর্তন করা হয়েছে
+      uses: android-actions/setup-android@v3
 
-    # ধাপ ৫: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
+    # ধাপ ৫: Buildozer এবং প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -39,8 +38,14 @@ jobs:
         pip install buildozer
 
     # ধাপ ৬: Buildozer দিয়ে অ্যান্ড্রয়েড ডিবাগ APK তৈরি করা
+    # --- এটিই মূল সমাধান: Buildozer কে আগে থেকে ইনস্টল করা SDK ব্যবহারে বাধ্য করা ---
     - name: Build with Buildozer
       run: |
+        # ANDROID_SDK_ROOT এবং ANDROID_NDK_ROOT ভেরিয়েবলগুলো Buildozer-কে SDK পুনরায় ডাউনলোড করা থেকে বিরত রাখে।
+        # $ANDROID_HOME এবং $ANDROID_NDK_HOME ভেরিয়েবলগুলো আগের ধাপে (Setup Android SDK) সেট করা হয়েছে।
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export ANDROID_NDK_ROOT=$ANDROID_NDK_HOME
+        
         buildozer --version
         buildozer --verbose android debug
 
