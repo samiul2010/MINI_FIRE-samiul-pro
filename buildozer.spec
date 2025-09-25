@@ -1,87 +1,84 @@
 [app]
-# (required) Title of your application
-title = MINI FIRE 
+# (required) আপনার অ্যাপ্লিকেশনের নাম
+title = Free Fire Mobile
 
-# (required) Package name
-package.name = minifiremobileapp
+# (required) প্যাকেজের নাম (সাধারণত ছোট হাতের অক্ষরে)
+package.name = freefiremobile
 
-# (required) Package domain (usually reversed domain name)
-package.domain = org.example.ffmobile
+# (required) প্যাকেজের ডোমেইন (সাধারণত উল্টো ডোমেইন নাম)
+package.domain = org.samiul.ffmobile
 
-# (required) Source code directory
+# (required) সোর্স কোডের ডিরেক্টরি
 source.dir = .
 
-# (list) Source files to include (let buildozer find them)
+# (list) যে ধরনের ফাইলগুলো প্যাকেজে অন্তর্ভুক্ত হবে
 source.include_exts = py,png,jpg,kv,atlas,db,ttf,json
 
-# (str) Version of your application
+# (str) আপনার অ্যাপ্লিকেশনের ভার্সন
 version = 1.0
 
-# (list) Application requirements
-# pyjnius for android java access, sqlite3 for the database
+# (list) প্রয়োজনীয় লাইব্রেরি
+# pyjnius অ্যান্ড্রয়েডের Java ক্লাস ব্যবহারের জন্য এবং sqlite3 ডাটাবেসের জন্য
 requirements = python3,kivy==2.2.1,pyjnius,sqlite3
 
-# (str) Presplash background color (hex format)
+# (str) অ্যাপ চালু হওয়ার আগের স্প্ল্যাশ স্ক্রিনের রঙ (হেক্স কোড)
 presplash.background_color = #000000
 
-# (str) Presplash image
-# presplash.filename = data/presplash.png
+# (str) অ্যাপের আইকন (প্রয়োজনে একটি icon.png ফাইল তৈরি করে এখানে পাথ দিন)
+# icon.filename = %(source.dir)s/icon.png
 
-# (str) Application icon
-icon.filename = icon.png
-
-# (str) Supported orientation
+# (str) স্ক্রিনের দিক (portrait বা landscape)
 orientation = portrait
 
-# (bool) Indicate if the application should be fullscreen
+# (bool) অ্যাপ্লিকেশনটি ফুলস্ক্রিন হবে কিনা
 fullscreen = 0
 
 [buildozer]
-# (int) Log level (0 = error, 1 = info, 2 = debug)
+# (int) লগ লেভেল (0 = error, 1 = info, 2 = debug)
+# ডিবাগ করার জন্য 2 ব্যবহার করা ভালো
 log_level = 2
 
-# (int) Warn if running buildozer with root privileges
+# (int) রুট ইউজার দিয়ে চালালে সতর্কবার্তা দেখাবে
 warn_on_root = 1
 
 # --------------------------------------------------
-# Android specific settings
+# Android এর জন্য নির্দিষ্ট সেটিংস (আধুনিক এবং সামঞ্জস্যপূর্ণ)
 # --------------------------------------------------
 
-# (int) Android API to use
-android.api = 33
+# (int) টার্গেট অ্যান্ড্রয়েড API লেভেল (সর্বশেষ স্থিতিশীল)
+android.api = 34
 
-# (int) Minimum API required
+# (int) সর্বনিম্ন অ্যান্ড্রয়েড API লেভেল
 android.minapi = 24
 
-# (list) Permissions
+# (list) প্রয়োজনীয় পারমিশন
 android.permissions = INTERNET, ACCESS_NETWORK_STATE
 
-# (list) Architectures to build for
+# (list) যে আর্কিটেকচারের জন্য বিল্ড হবে
 android.archs = arm64-v8a, armeabi-v7a
 
-# (str) Android NDK version to use
-# Using a specific, known-stable version is better
-android.ndk = 25b
+# (str) অ্যান্ড্রয়েড NDK (Native Development Kit) এর ভার্সন
+# 26c একটি আধুনিক এবং স্থিতিশীল পছন্দ
+android.ndk = 26c
 
-# (str) Android SDK version
-android.sdk = 20
-
-# (str) Python for android branch to use
-# Using 'master' is often more up-to-date
+# (str) python-for-android এর ব্রাঞ্চ
+# master ব্রাঞ্চে লেটেস্ট ফিক্সগুলো থাকে
 p4a.branch = master
 
-# --- Start.io Ad SDK Integration ---
-# Add Start.io SDK from Gradle
+# (bool) রিলিজ বিল্ডের জন্য বিভক্ত AAB তৈরি করবে কিনা
+# গুগল প্লে স্টোরে আপলোড করার জন্য এটি True রাখুন
+android.release.build_aab = true
+
+# --- Start.io Ad SDK ইন্টিগ্রেশন ---
+# Gradle এর মাধ্যমে SDK যোগ করা
 android.gradle_dependencies = 'com.startapp:inapp-sdk:4.11.+'
 
-# Add the App ID to the AndroidManifest.xml
-# !!! আপনার আসল Start.io App ID এখানে দিন !!!
+# AndroidManifest.xml ফাইলে আপনার App ID যোগ করা
+# !!! আপনার আসল Start.io App ID এখানে ব্যবহার করুন !!!
 android.manifest.meta-data = com.startapp.sdk.APPLICATION_ID=207965871
 
-
-android.sdk_path = /usr/local/lib/android/sdk
-android.ndk_path = /usr/local/lib/android/sdk/ndk-bundle
-# Add required entries to the application tag in AndroidManifest.xml
+# AndroidManifest.xml এর application ট্যাগে অতিরিক্ত এন্ট্রি যোগ করা
+# বিজ্ঞাপনের জন্য নেটওয়ার্ক অ্যাক্সেস নিশ্চিত করতে
 android.manifest.application_tags =
     android:usesCleartextTraffic="true"
-    
+
