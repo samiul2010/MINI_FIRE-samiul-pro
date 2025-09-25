@@ -78,6 +78,9 @@ android.gradle_dependencies = 'com.startapp:inapp-sdk:4.11.+'
 # !!! আপনার আসল Start.io App ID এখানে দিন !!!
 android.manifest.meta-data = com.startapp.sdk.APPLICATION_ID=207965871
 
+
+android.sdk_path = /usr/local/lib/android/sdk
+android.ndk_path = /usr/local/lib/android/sdk/ndk-bundle
 # Add required entries to the application tag in AndroidManifest.xml
 android.manifest.application_tags =
     android:usesCleartextTraffic="true"
