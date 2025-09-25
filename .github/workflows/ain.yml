@@ -1,4 +1,4 @@
-name: Build Kivy Android App (Final Version)
+name: Build Kivy Android App (Final Stable Version)
 
 on:
   push:
@@ -22,14 +22,14 @@ jobs:
 
     # ধাপ ৩: Python 3.9 সেটআপ করা
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: '3.9'
 
-    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (সর্বশেষ সংস্করণ ব্যবহার করে)
-    # --- এটিই মূল পরিবর্তন: v3 থেকে v4 এ আপগ্রেড করা হয়েছে ---
+    # ধাপ ৪: Android SDK এবং NDK সেটআপ করা (একটি নির্দিষ্ট এবং স্থিতিশীল সংস্করণ ব্যবহার করে)
+    # --- এটিই মূল সমাধান: একটি নির্দিষ্ট সংস্করণ নম্বর ব্যবহার করা হচ্ছে ---
     - name: Setup Android SDK
-      uses: android-actions/setup-android@v4 # <--- এখানে পরিবর্তন করা হয়েছে
+      uses: android-actions/setup-android@v3 # <--- এখানে পরিবর্তন করা হয়েছে
 
     # ধাপ ৫: Buildozer এবং এর জন্য প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
     - name: Install dependencies
