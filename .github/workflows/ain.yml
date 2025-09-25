@@ -9,6 +9,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # ... আগের ধাপগুলো একই থাকবে ...
+
+    - name: Build with Buildozer and accept licenses
+      run: |
+        # --- নতুন এবং গুরুত্বপূর্ণ লাইন ---
+        # পুরনো এবং সম্ভাব্য সমস্যাযুক্ত বিল্ড ফাইলগুলো ডিলিট করে দেবে
+        buildozer android clean
+        
+        # এখন একটি পরিষ্কার পরিবেশ থেকে বিল্ড শুরু হবে
+        yes | buildozer --verbose android debug
+        
     - name: Checkout code
       uses: actions/checkout@v4
 
