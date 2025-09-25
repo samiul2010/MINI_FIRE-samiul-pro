@@ -1,4 +1,4 @@
-name: Build Kivy Android App (Docker-Based Final Attempt)
+name: Build Kivy Android App (Docker Final Fix)
 
 on:
   push:
@@ -12,11 +12,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # আমরা আর Java বা Python সেটআপ করব না, কারণ সবকিছু ডকার ইমেজের ভেতরেই আছে।
+    # --- নতুন এবং চূড়ান্ত সমাধান ---
+    # ডকারের বিল্ড এনভায়রনমেন্ট সেটআপ এবং আপডেট করা
+    # এটি 'unsupported media type' সমস্যার সমাধান করবে
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
     - name: Build with Docker and accept licenses
       run: |
         # Kivy-র অফিসিয়াল অ্যান্ড্রয়েড বিল্ড ডকার ইমেজটি ব্যবহার করা হচ্ছে
+        # এইবার ডকার ক্লায়েন্ট আপডেট থাকায় ইমেজটি সঠিকভাবে ডাউনলোড হবে
         docker run --rm \
           -v "$(pwd)":/app \
           kivy/buildozer:latest \
