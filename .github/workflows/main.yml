@@ -1,4 +1,4 @@
-name: Build Android APK (The Final Fix)
+name: Build Android APK
 
 on:
   push:
@@ -15,15 +15,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       
-    # --- মূল এবং চূড়ান্ত সমাধান ---
     - name: Build with Buildozer Action
       uses: ArtemSBulgakov/buildozer-action@v1
       with:
-        # এই লাইনটি 'chown: invalid user: ‘user’' সমস্যার সমাধান করবে
-        user: root
-        
-        # আমরা spec ফাইলকে বিশ্বাস করছি, তাই এখানে আর কিছু নির্দিষ্ট করার প্রয়োজন নেই
         command: buildozer android debug
+        buildozer_version: stable
+        python_version: 3.10
+        java_version: 17
+        ndk_version: 26c
+        sdk_version: 34
+        
 
     - name: Verify APK creation
       run: |
@@ -51,4 +52,4 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
+
