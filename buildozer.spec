@@ -37,7 +37,7 @@ fullscreen = 0
 # --------------------------------------------------
 
 # (int) টার্গেট অ্যান্ড্রয়েড API লেভেল
-android.api = 34
+android.api = 33
 
 # (int) সর্বনিম্ন অ্যান্ড্রয়েড API লেভেল
 android.minapi = 24
@@ -49,7 +49,7 @@ android.permissions = INTERNET, ACCESS_NETWORK_STATE
 android.archs = arm64-v8a, armeabi-v7a
 
 # (str) অ্যান্ড্রয়েড NDK (Native Development Kit) এর ভার্সন
-android.ndk = 26c
+android.ndk = 25b
 
 # (str) python-for-android এর ব্রাঞ্চ
 p4a.branch = main
