@@ -20,10 +20,10 @@ jobs:
       with:
         command: buildozer android debug
         buildozer_version: stable
-        python_version: 3.10
+        python_version: 3.11
         java_version: 17
-        ndk_version: 26c
-        sdk_version: 34
+        ndk_version: 25b
+        sdk_version: 33
         
 
     - name: Verify APK creation
