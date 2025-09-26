@@ -50,9 +50,9 @@ buildozer_spec:
   author: "Samiul"
   source.include_exts: "py,png,jpg,kv,atlas,ttf"
   version.regex: __version__ = ['"](.*)['"]
-  version.filename: %(source.dir)s/main.py
-  presplash.filename: %(source.dir)s/assets/presplash.png
-  icon.filename: %(source.dir)s/assets/icon.png
+  version.filename: ./main.py
+  presplash.filename: ./assets/presplash.png
+  icon.filename: ./assets/icon.png
   orientation: "portrait"
   osx.python_version: "3"
   osx.kivy_version: "2.1.0"
@@ -209,7 +209,7 @@ versions:
 notes: |
   To build the APK:
   1. Install buildozer: pip install buildozer
-  2. Run: buildozer init
+  #2. Run: buildozer init
   3. Run: buildozer android debug
   4. Find APK in bin/ directory
   
