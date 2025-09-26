@@ -1,70 +1,217 @@
-name: Build Android APK (Custom Environment)
+# samiul_build_apk.yml
+project:
+  name: "MINI FIRE"
+  version: "1.0.0"
+  package_name: "com.samiul.minifire"
+  source_dir: "."
+  requirements:
+    - "python3"
+    - "kivy==2.1.0"
+    - "kivymd"
+    - "android"
+    - "jinja2"
+    - "sh"
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
+android:
+  sdk: 33
+  min_sdk: 21
+  ndk: "23b"
+  permissions:
+    - "INTERNET"
+    - "ACCESS_NETWORK_STATE"
+    - "WRITE_EXTERNAL_STORAGE"
+    - "READ_EXTERNAL_STORAGE"
+    - "WAKE_LOCK"
 
-jobs:
-  build-android:
-    # আমরা একটি স্থিতিশীল এবং পরীক্ষিত রানার ব্যবহার করছি
-    runs-on: ubuntu-22.04
+build:
+  command: "buildozer android debug"
+  output_dir: "bin"
+  clean_build: true
+  log_level: 2
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+assets:
+  icon: "assets/icon.png"
+  presplash: "assets/presplash.png"
+  include_exts: "py,png,jpg,jpeg,kv,atlas,ttf"
 
-    - name: Set up Java (JDK 17)
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+app_config:
+  orientation: "portrait"
+  fullscreen: 1
+  log_enable: 1
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+deployment:
+  adb_path: "adb"
+  device: "auto"
+  install_after_build: true
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git zip unzip autoconf automake libtool build-essential libncurses5-dev
-        sudo apt-get install -y libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0
+# Buildozer spec file configuration
+buildozer_spec:
+  title: "MINI FIRE"
+  author: "Samiul"
+  source.include_exts: "py,png,jpg,kv,atlas,ttf"
+  version.regex: __version__ = ['"](.*)['"]
+  version.filename: %(source.dir)s/main.py
+  presplash.filename: %(source.dir)s/assets/presplash.png
+  icon.filename: %(source.dir)s/assets/icon.png
+  orientation: "portrait"
+  osx.python_version: "3"
+  osx.kivy_version: "2.1.0"
+  fullscreen: "1"
+  android.api: "33"
+  android.minapi: "21"
+  android.sdk: "24"
+  android.ndk: "23b"
+  android.private_storage: "True"
+  android.entrypoint: "org.kivy.android.PythonActivity"
+  android.allow_backup: "true"
+  android.apptheme: "@android:style/Theme.NoTitleBar"
+  android.meta_data: "android.app.lib_name=minifire"
+  android.add_configs: "android:largeHeap=true"
+  android.add_configs: "android:vmSafeMode=true"
 
-    - name: Install Buildozer and dependencies
-      run: |
-        pip install "cython==0.29.36"
-        pip install buildozer
+# Build optimization
+optimization:
+  reduce_class_files: true
+  reduce_resource_files: true
+  remove_source_code: true
+  optimize_png: true
+  compress_level: 9
 
-    - name: Set up Android SDK and NDK
-      run: |
-        # SDK Command-line Tools ডাউনলোড এবং আনজিপ করা
-        wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
-        unzip commandlinetools-linux-8512546_latest.zip -d $ANDROID_HOME/cmdline-tools
-        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+# Dependencies for Mini Fire game
+dependencies:
+  python_packages:
+    - "kivy"
+    - "kivymd"
+    - "pillow"
+  
+  system_packages:
+    - "python3-dev"
+    - "libffi-dev"
+    - "libssl-dev"
+    - "libjpeg-dev"
+    - "libzip-dev"
 
-        # PATH কনফিগার করা যাতে sdkmanager খুঁজে পাওয়া যায়
-        echo "export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+# Build commands sequence
+build_commands:
+  setup: |
+    buildozer init
+    buildozer android clean
+    
+  build: |
+    buildozer android debug
+    
+  deploy: |
+    buildozer android deploy
+    
+  run: |
+    buildozer android debug deploy run
 
-        # SDK প্ল্যাটফর্ম, বিল্ড টুলস এবং NDK ডাউনলোড ও লাইসেন্স গ্রহণ
-        # আপনার spec ফাইল অনুযায়ী (API 33, NDK 25c, Build-Tools 33.0.2 )
-        yes | sdkmanager "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+# File structure
+files:
+  required:
+    - "main.py"
+    - "buildozer.spec"
+    - "assets/icon.png"
+    - "assets/presplash.png"
+  
+  optional:
+    - "README.md"
+    - "LICENSE"
+    - "requirements.txt"
 
-    - name: Add Buildozer to PATH
-      run: |
-        echo "/home/runner/.local/bin" >> $GITHUB_PATH
+# Build environment
+environment:
+  python_version: "3.8"
+  buildozer_version: "1.4.0"
+  recommended_os: "Ubuntu 20.04+"
 
-    - name: Build with Buildozer
-      run: |
-        # এখন একটি সম্পূর্ণ কাস্টম এবং নিয়ন্ত্রিত পরিবেশে বিল্ড চালানো হচ্ছে
-        buildozer --verbose android debug
+# Troubleshooting
+troubleshooting:
+  common_issues:
+    - "Issue: SDK not found - Solution: Set ANDROIDSDK and ANDROIDNDK paths"
+    - "Issue: Build fails - Solution: Run 'buildozer android clean' first"
+    - "Issue: App crashes - Solution: Check logcat for errors"
+  
+  log_location: ".buildozer/android/platform/build-*/LOGS/"
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk
-        path: bin/*.apk
-        retention-days: 30
-        
+# APK signing (for release builds)
+signing:
+  release: false
+  keystore: "minifire.keystore"
+  keystore_password: "change_this_password"
+  key_alias: "minifire"
+  key_password: "change_this_password"
+
+# Post-build actions
+post_build:
+  - "cp bin/*.apk ./"
+  - "ls -la *.apk"
+  - "echo 'Build completed successfully!'"
+
+# Build variants
+variants:
+  debug:
+    type: "debug"
+    features: "debug"
+    
+  release:
+    type: "release"
+    features: "release"
+    signing: true
+
+# Build configuration for different devices
+device_configs:
+  low_end:
+    texture_size: "1024"
+    max_fps: "30"
+    
+  high_end:
+    texture_size: "2048"
+    max_fps: "60"
+
+# Metadata for app stores
+store_metadata:
+  short_description: "Mini Fire - Exciting mobile shooting game"
+  full_description: |
+    Mini Fire is an exciting mobile shooting game with endless levels, 
+    multiple characters, and progressive difficulty. Features smooth controls, 
+    various weapons, and engaging gameplay.
+    
+  keywords:
+    - "game"
+    - "shooting"
+    - "action"
+    - "mobile"
+    - "mini fire"
+    
+  category: "GAME_ACTION"
+  content_rating: "EVERYONE"
+  contact_email: "samiul@example.com"
+
+# Version history
+versions:
+  "1.0.0":
+    date: "2024-01-01"
+    changes:
+      - "Initial release"
+      - "Basic gameplay"
+      - "5 characters"
+      - "8 weapons"
+      
+  "1.1.0":
+    date: "2024-02-01"
+    changes:
+      - "Added new levels"
+      - "Improved graphics"
+      - "Bug fixes"
+
+# Build notes for Samiul
+notes: |
+  To build the APK:
+  1. Install buildozer: pip install buildozer
+  2. Run: buildozer init
+  3. Run: buildozer android debug
+  4. Find APK in bin/ directory
+  
+  For release build:
+  buildozer android release
