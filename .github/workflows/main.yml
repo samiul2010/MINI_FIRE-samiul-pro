@@ -17,13 +17,13 @@ jobs:
       
     - name: Build with Buildozer Action
       uses: ArtemSBulgakov/buildozer-action@v1
-      with:
-        command: buildozer android debug
-        buildozer_version: stable
-        python_version: 3.11
-        java_version: 17
-        ndk_version: 25b
-        sdk_version: 33
+      #with:
+        #command: buildozer android debug
+        #buildozer_version: stable
+        #python_version: 3.11
+        #java_version: 17
+        #ndk_version: 25b
+        #sdk_version: 33
         
 
     - name: Verify APK creation
