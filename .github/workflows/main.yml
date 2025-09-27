@@ -1,63 +1,35 @@
-name: Build Android APK - Ultimate Solution
+name: Build Android APK - Fixed for Ubuntu 24.04
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    
+    runs-on: ubuntu-latest  # এটি এখন Ubuntu 24.04 (noble) কে ইঙ্গিত করে
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
-    - name: Set up Python 3.8
+
+    - name: Set up Python 3.11
       uses: actions/setup-python@v4
       with:
-        python-version: '3.8'
-        
-    - name: Install specific older dependencies
+        python-version: '3.11'
+
+    - name: Install Java 17 and Essential Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          python3-pip \
-          openjdk-8-jdk \
-          git \
-          unzip \
-          build-essential
-        
-    - name: Install Buildozer 1.2.0 (stable version)
+        # Ubuntu 24.04-এ সঠিক প্যাকেজ নাম দিয়ে Java 17 ইন্সটল করুন
+        sudo apt-get install -y openjdk-17-jdk
+        # Buildozer এর জন্য প্রয়োজনীয় বিল্ড টুলস
+        sudo apt-get install -y git wget unzip python3-pip autoconf libtool pkg-config
+
+    - name: Install Buildozer and Dependencies
       run: |
-        pip install buildozer==1.2.0 cython==0.29.21
-        
-    - name: Initialize Buildozer if needed
-      run: |
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-          echo "📋 Buildozer spec file created"
-        fi
-        
+        python -m pip install --upgrade pip
+        pip install buildozer cython
+
     - name: Build APK
       run: |
         buildozer android debug
-        
-    - name: Verify APK
-      run: |
-        if ls bin/*.apk 1> /dev/null 2>&1; then
-          echo "✅ SUCCESS: APK created!"
-          ls -la bin/*.apk
-        else
-          echo "❌ FAILED: No APK found"
-          exit 1
-        fi
-        
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk
-        path: bin/*.apk
-        retention-days: 30
