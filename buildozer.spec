@@ -1,4 +1,4 @@
-ড[app]
+[app]
 title = MINI FIRE
 package.name = minifire
 package.domain = com.samiul
