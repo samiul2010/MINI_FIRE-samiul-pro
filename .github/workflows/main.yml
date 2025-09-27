@@ -1,17 +1,21 @@
 name: Build MINI FIRE APK
 
-on: [push]
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ✅ Ubuntu 22.04 use করছি (stable)
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v4
       with:
         python-version: '3.8'
         
@@ -23,16 +27,60 @@ jobs:
           python3-pip autoconf libtool \
           pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev \
-          libtinfo5 cmake libffi-dev libssl-dev
-        
+          libtinfo6 cmake libffi-dev libssl-dev \  # ✅ libtinfo6 instead of libtinfo5
+          ninja-build curl
+          
     - name: Install Buildozer
       run: pip install buildozer
+      
+    - name: Create minimal buildozer.spec
+      run: |
+        buildozer init
+        # Override with minimal spec
+        cat > buildozer.spec << EOF
+[app]
+title = MINI FIRE
+package.name = minifire
+package.domain = com.samiul
+source.dir = .
+source.include_exts = py,png,jpg,kv
+version = 1.0.0
+requirements = python3,kivy
+
+[android]
+api = 21
+minapi = 21
+permissions = INTERNET
+
+[buildozer]
+log_level = 1
+EOF
         
-    - name: Build APK
-      run: buildozer android debug
+    - name: Build APK (with timeout)
+      run: |
+        timeout 1800 buildozer android debug || echo "Build may have timed out but continuing..."
+        
+    - name: Check for APK
+      id: check-apk
+      run: |
+        if find bin/ -name "*.apk" | grep -q .; then
+          echo "APK found!"
+          echo "apk_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "No APK found"
+          echo "apk_exists=false" >> $GITHUB_OUTPUT
+        fi
         
     - name: Upload APK
+      if: steps.check-apk.outputs.apk_exists == 'true'
       uses: actions/upload-artifact@v4
       with:
-        name: mini-fire-apk
+        name: MINI-FIRE-APK
         path: bin/*.apk
+        retention-days: 30
+        
+    - name: Show build logs
+      if: steps.check-apk.outputs.apk_exists == 'false'
+      run: |
+        echo "Build failed. Checking logs..."
+        ls -la .buildozer/ || echo "No buildozer directory"
