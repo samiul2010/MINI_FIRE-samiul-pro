@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  kivy-builder:
+    build: .
+    volumes:
+      - .:/app
+      - kivy-buildozer-cache:/root/.buildozer
+    working_dir: /app
+
+volumes:
+  kivy-buildozer-cache:
