@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Build with Buildozer Action
-      uses: ArtemSBulgakov/buildozer-action@v1
+      uses: mobolic/buildozer-action@v0.2.0
       with:
         command: buildozer android debug
         buildozer_version: stable
