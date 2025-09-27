@@ -1,69 +1,54 @@
-name: Build MINI FIRE APK
+name: Build Android APK
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # ✅ Ubuntu 22.04 use করছি (stable)
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
       
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v4
+    - name: Build with Buildozer Action
+      uses: ArtemSBulgakov/buildozer-action@v1
       with:
-        python-version: '3.8'
+        command: buildozer android debug
+        buildozer_version: stable
+        python_version: 3.11
+        java_version: 17
+        ndk_version: 25b
+        sdk_version: 33
         
-    - name: Install system dependencies
+
+    - name: Verify APK creation
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          git unzip openjdk-11-jdk \
-          python3-pip autoconf libtool \
-          pkg-config zlib1g-dev \
-          libncurses5-dev libncursesw5-dev \
-          libtinfo6 cmake libffi-dev libssl-dev \  # ✅ libtinfo6 instead of libtinfo5
-          ninja-build curl
-          
-    - name: Install Buildozer
-      run: pip install buildozer
-      
-    - name: Create minimal buildozer.spec
-      run: |
-        buildozer init
-        # Override with minimal spec
-        cat > buildozer.spec << EO
-        
-    - name: Build APK (with timeout)
-      run: |
-        timeout 1800 buildozer android debug || echo "Build may have timed out but continuing..."
-        
-    - name: Check for APK
-      id: check-apk
-      run: |
-        if find bin/ -name "*.apk" | grep -q .; then
-          echo "APK found!"
-          echo "apk_exists=true" >> $GITHUB_OUTPUT
+        if [ -f bin/*.apk ]; then
+          echo "APK successfully created!"
+          ls -la bin/
         else
-          echo "No APK found"
-          echo "apk_exists=false" >> $GITHUB_OUTPUT
+          echo "Error: APK file not found!"
+          exit 1
         fi
         
-    - name: Upload APK
-      if: steps.check-apk.outputs.apk_exists == 'true'
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: MINI-FIRE-APK
+        name: android-apk
         path: bin/*.apk
         retention-days: 30
         
-    - name: Show build logs
-      if: steps.check-apk.outputs.apk_exists == 'false'
-      run: |
-        echo "Build failed. Checking logs..."
-        ls -la .buildozer/ || echo "No buildozer directory"
+    - name: Create Release (on tag push)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }
