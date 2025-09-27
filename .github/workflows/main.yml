@@ -1,4 +1,4 @@
-name: Build Android APK with Docker
+name: Build Android APK with Custom Docker
 
 on:
   push:
@@ -7,15 +7,50 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build APK using Kivy's Buildozer Docker image
+    - name: Build a custom Buildozer Docker image
+      run: |
+        # Create a Dockerfile that sets up the environment
+        cat > Dockerfile << 'EOF'
+        FROM ubuntu:22.04
+
+        # Set environment variables to avoid interactive prompts
+        ENV DEBIAN_FRONTEND=noninteractive
+
+        # Install system dependencies and Buildozer requirements
+        RUN apt-get update && apt-get install -y \
+            python3 \
+            python3-pip \
+            git \
+            wget \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libtinfo5 \
+            && rm -rf /var/lib/apt/lists/*
+
+        # Install Buildozer
+        RUN pip3 install buildozer cython
+
+        # Set the working directory
+        WORKDIR /app
+        EOF
+
+        # Build the Docker image
+        docker build -t my-buildozer .
+
+    - name: Run Buildozer inside the custom container
       run: |
         docker run --rm \
-          -v "$(pwd)":/home/user/hostcwd \
-          -w /home/user/hostcwd \
-          kivy/buildozer:latest \
+          -v "$(pwd)":/app \
+          -w /app \
+          my-buildozer \
           buildozer android debug
