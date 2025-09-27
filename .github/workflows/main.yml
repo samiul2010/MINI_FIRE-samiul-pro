@@ -37,24 +37,7 @@ jobs:
       run: |
         buildozer init
         # Override with minimal spec
-        cat > buildozer.spec << EOF
-[app]
-title = MINI FIRE
-package.name = minifire
-package.domain = com.samiul
-source.dir = .
-source.include_exts = py,png,jpg,kv
-version = 1.0.0
-requirements = python3,kivy
-
-[android]
-api = 21
-minapi = 21
-permissions = INTERNET
-
-[buildozer]
-log_level = 1
-EOF
+        cat > buildozer.spec << EO
         
     - name: Build APK (with timeout)
       run: |
