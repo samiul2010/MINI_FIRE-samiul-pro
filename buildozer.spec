@@ -1,4 +1,4 @@
-[app]
+ড[app]
 title = MINI FIRE
 package.name = minifire
 package.domain = com.samiul
@@ -18,7 +18,7 @@ requirements =
 
 android.accept_sdk_license = True
 # (str) python-for-android branch to use, defaults to master
-p4a.branch = master
+p4a.branch = develop
 [android]
 api = 33
 minapi = 21
