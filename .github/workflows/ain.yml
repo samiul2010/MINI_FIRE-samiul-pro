@@ -1,4 +1,4 @@
-name: Build Android APK with Docker Linux Environment
+ত্রname: Build Android APK with Docker Linux Environment
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           -v "$(pwd)":/app \
           -w /app \
           buildozer-android \
-          bash -c "buildozer android clean && buildozer android debug"
+          bash -c "yes | buildozer android clean && buildozer android debug"
       
     - name: Verify APK creation
       run: |
