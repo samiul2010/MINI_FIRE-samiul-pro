@@ -16,6 +16,7 @@ requirements =
     pillow,
     pyjnius
 
+android.accept_sdk_license = True
 [android]
 api = 33
 minapi = 21
@@ -23,3 +24,5 @@ permissions = INTERNET,ACCESS_NETWORK_STATE,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL
 
 [app:icon]
 icon.filename = icon.png
+[buildozer]
+full_rebuild = 1
