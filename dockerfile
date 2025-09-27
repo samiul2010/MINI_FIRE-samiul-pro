@@ -1,33 +1,23 @@
-FROM kivy/kivy:latest
+FROM ubuntu:22.04
 
-# Set working directory
-WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy project files
-COPY . .
-
-# Install buildozer in kivy environment
-RUN pip install buildozer
-
-# Install Android SDK
+# System dependencies ইনস্টল করুন
 RUN apt-get update && apt-get install -y \
-    openjdk-11-jdk \
-    wget \
-    unzip
+    python3 python3-pip openjdk-17-jdk git wget unzip \
+    build-essential autoconf automake libtool pkg-config zlib1g-dev \
+    libssl-dev libffi-dev cmake && \
+    apt-get clean
 
-# Download Android SDK
-RUN wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O /tmp/sdk.zip \
-    && mkdir -p /opt/android-sdk \
-    && unzip -q /tmp/sdk.zip -d /opt/android-sdk \
-    && mkdir -p /opt/android-sdk/cmdline-tools/latest \
-    && mv /opt/android-sdk/cmdline-tools/* /opt/android-sdk/cmdline-tools/latest/ \
-    && rm /tmp/sdk.zip
+# Non-root user তৈরি করুন
+RUN useradd -m -U builder
+USER builder
+WORKDIR /home/builder
 
-# Set environment variables
-ENV ANDROID_SDK_ROOT=/opt/android-sdk
-ENV PATH=$PATH:/opt/android-sdk/cmdline-tools/latest/bin
+# Buildozer PATH-এ যোগ করুন
+ENV PATH="/home/builder/.local/bin:${PATH}"
 
-# Accept licenses
-RUN yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+# Buildozer non-root user হিসেবে ইনস্টল করুন
+RUN pip3 install --user buildozer cython==0.29.33
 
-CMD ["buildozer", "android", "debug"]
+WORKDIR /home/builder/app
