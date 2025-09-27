@@ -45,9 +45,13 @@ jobs:
         pip install --upgrade pip
         pip install buildozer cython==0.29.33
         
-    - name: Build APK with Buildozer
+    - name: Build APK with manual license acceptance
       run: |
-        buildozer android debug
+        # Force accept all Android licenses
+        mkdir -p ~/.android
+        touch ~/.android/repositories.cfg
+        echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ~/.android/adbkey
+        echo "yes" | buildozer android debug 2>&1 | tee build.log
         
     - name: Verify APK creation
       run: |
