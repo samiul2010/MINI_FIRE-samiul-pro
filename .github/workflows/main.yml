@@ -1,4 +1,4 @@
-name: Build Android APK - Fixed for Ubuntu 24.04
+name: Build Android APK with Docker
 
 on:
   push:
@@ -6,30 +6,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # এটি এখন Ubuntu 24.04 (noble) কে ইঙ্গিত করে
-
+    runs-on: ubuntu-latest
+    
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install Java 17 and Essential Dependencies
+    - name: Build APK using Kivy's Buildozer Docker image
       run: |
-        sudo apt-get update
-        # Ubuntu 24.04-এ সঠিক প্যাকেজ নাম দিয়ে Java 17 ইন্সটল করুন
-        sudo apt-get install -y openjdk-17-jdk
-        # Buildozer এর জন্য প্রয়োজনীয় বিল্ড টুলস
-        sudo apt-get install -y git wget unzip python3-pip autoconf libtool pkg-config
-
-    - name: Install Buildozer and Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install buildozer cython
-
-    - name: Build APK
-      run: |
-        buildozer android debug
+        docker run --rm \
+          -v "$(pwd)":/home/user/hostcwd \
+          -w /home/user/hostcwd \
+          kivy/buildozer:latest \
+          buildozer android debug
