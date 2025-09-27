@@ -2,22 +2,22 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# System dependencies ইনস্টল করুন
+# একবারেই সব dependencies install করুন
 RUN apt-get update && apt-get install -y \
-    python3 python3-pip openjdk-17-jdk git wget unzip \
-    build-essential autoconf automake libtool pkg-config zlib1g-dev \
-    libssl-dev libffi-dev cmake && \
-    apt-get clean
+    python3 python3-pip git wget unzip \
+    openjdk-17-jdk autoconf automake libtool \
+    pkg-config zlib1g-dev cmake ninja-build \
+    build-essential && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Non-root user তৈরি করুন
-RUN useradd -m -U builder
+# Non-root user setup
+RUN useradd -m -u 1001 builder
 USER builder
 WORKDIR /home/builder
 
-# Buildozer PATH-এ যোগ করুন
+# Buildozer এবং dependencies একসাথে install
+RUN pip3 install --user buildozer cython
 ENV PATH="/home/builder/.local/bin:${PATH}"
-
-# Buildozer non-root user হিসেবে ইনস্টল করুন
-RUN pip3 install --user buildozer cython==0.29.33
 
 WORKDIR /home/builder/app
