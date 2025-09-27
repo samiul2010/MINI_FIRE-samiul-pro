@@ -1,4 +1,4 @@
-name: Build Android APK with Custom Docker
+name: Build Android APK with Docker
 
 on:
   push:
@@ -12,45 +12,48 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build a custom Buildozer Docker image
+    - name: Build Docker image with non-root user
       run: |
-        # Create a Dockerfile that sets up the environment
         cat > Dockerfile << 'EOF'
         FROM ubuntu:22.04
-
-        # Set environment variables to avoid interactive prompts
+        
         ENV DEBIAN_FRONTEND=noninteractive
-
-        # Install system dependencies and Buildozer requirements
+        
+        # System dependencies install
         RUN apt-get update && apt-get install -y \
-            python3 \
-            python3-pip \
-            git \
-            wget \
-            unzip \
-            openjdk-17-jdk \
-            autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libtinfo5 \
-            && rm -rf /var/lib/apt/lists/*
-
-        # Install Buildozer
-        RUN pip3 install buildozer cython
-
-        # Set the working directory
-        WORKDIR /app
+            python3 python3-pip git wget unzip openjdk-17-jdk \
+            autoconf automake libtool pkg-config zlib1g-dev \
+            && apt-get clean
+            
+        # Non-root user create
+        RUN useradd -m -u 1000 builder
+        USER builder
+        WORKDIR /home/builder
+        
+        # Buildozer install as non-root
+        RUN pip3 install --user buildozer cython
+        ENV PATH="/home/builder/.local/bin:${PATH}"
+        
+        WORKDIR /home/builder/app
         EOF
-
-        # Build the Docker image
+        
         docker build -t my-buildozer .
 
     - name: Run Buildozer with auto-accept
       run: |
         docker run --rm \
-          -v "$(pwd)":/app \
-          -w /app \
+          -u 1000 \
+          -v "$(pwd)":/home/builder/app \
+          -w /home/builder/app \
           my-buildozer \
           bash -c "yes | buildozer android debug"
+
+    - name: Check APK file
+      run: |
+        if ls bin/*.apk 1> /dev/null 2>&1; then
+          echo "✅ APK successfully created!"
+          ls -la bin/
+        else
+          echo "❌ APK file not found!"
+          exit 1
+        fi
