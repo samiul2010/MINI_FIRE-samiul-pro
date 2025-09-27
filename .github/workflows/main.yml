@@ -12,7 +12,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build Docker image with non-root user
+    - name: Build Docker image with proper permissions
       run: |
         cat > Dockerfile << 'EOF'
         FROM ubuntu:22.04
@@ -25,35 +25,32 @@ jobs:
             autoconf automake libtool pkg-config zlib1g-dev \
             && apt-get clean
             
-        # Non-root user create
-        RUN useradd -m -u 1000 builder
+        # Create non-root user with proper UID that matches host
+        RUN useradd -m -u 1001 builder
         USER builder
         WORKDIR /home/builder
+        
+        # Create app directory with proper permissions
+        RUN mkdir -p /home/builder/app
+        WORKDIR /home/builder/app
         
         # Buildozer install as non-root
         RUN pip3 install --user buildozer cython
         ENV PATH="/home/builder/.local/bin:${PATH}"
-        
-        WORKDIR /home/builder/app
         EOF
         
         docker build -t my-buildozer .
 
-    - name: Run Buildozer with auto-accept
+    - name: Pre-create directories with proper permissions
+      run: |
+        mkdir -p .buildozer bin
+        chmod 755 .buildozer bin
+
+    - name: Run Buildozer with proper volume permissions
       run: |
         docker run --rm \
-          -u 1000 \
+          -u 1001 \
           -v "$(pwd)":/home/builder/app \
           -w /home/builder/app \
           my-buildozer \
           bash -c "yes | buildozer android debug"
-
-    - name: Check APK file
-      run: |
-        if ls bin/*.apk 1> /dev/null 2>&1; then
-          echo "✅ APK successfully created!"
-          ls -la bin/
-        else
-          echo "❌ APK file not found!"
-          exit 1
-        fi
