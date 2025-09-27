@@ -47,11 +47,10 @@ jobs:
         # Build the Docker image
         docker build -t my-buildozer .
 
-    - name: Run Buildozer inside the custom container
+    - name: Run Buildozer with auto-accept
       run: |
         docker run --rm \
           -v "$(pwd)":/app \
           -w /app \
           my-buildozer \
-          buildozer android debug
-          
+          bash -c "yes | buildozer android debug"
