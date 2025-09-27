@@ -1,217 +1,38 @@
-# samiul_build_apk.yml
-project:
-  name: "MINI FIRE"
-  version: "1.0.0"
-  package_name: "com.samiul.minifire"
-  source_dir: "."
-  requirements:
-    - "python3"
-    - "kivy==2.1.0"
-    - "kivymd"
-    - "android"
-    - "jinja2"
-    - "sh"
+name: Build MINI FIRE APK
 
-android:
-  sdk: 33
-  min_sdk: 21
-  ndk: "23b"
-  permissions:
-    - "INTERNET"
-    - "ACCESS_NETWORK_STATE"
-    - "WRITE_EXTERNAL_STORAGE"
-    - "READ_EXTERNAL_STORAGE"
-    - "WAKE_LOCK"
+on: [push]
 
-build:
-  command: "buildozer android debug"
-  output_dir: "bin"
-  clean_build: true
-  log_level: 2
-
-assets:
-  icon: "assets/icon.png"
-  presplash: "assets/presplash.png"
-  include_exts: "py,png,jpg,jpeg,kv,atlas,ttf"
-
-app_config:
-  orientation: "portrait"
-  fullscreen: 1
-  log_enable: 1
-
-deployment:
-  adb_path: "adb"
-  device: "auto"
-  install_after_build: true
-
-# Buildozer spec file configuration
-buildozer_spec:
-  title: "MINI FIRE"
-  author: "Samiul"
-  source.include_exts: "py,png,jpg,kv,atlas,ttf"
-  version.regex: __version__ = ['"](.*)['"]
-  version.filename: ./main.py
-  presplash.filename: ./assets/presplash.png
-  icon.filename: ./assets/icon.png
-  orientation: "portrait"
-  osx.python_version: "3"
-  osx.kivy_version: "2.1.0"
-  fullscreen: "1"
-  android.api: "33"
-  android.minapi: "21"
-  android.sdk: "24"
-  android.ndk: "23b"
-  android.private_storage: "True"
-  android.entrypoint: "org.kivy.android.PythonActivity"
-  android.allow_backup: "true"
-  android.apptheme: "@android:style/Theme.NoTitleBar"
-  android.meta_data: "android.app.lib_name=minifire"
-  android.add_configs: "android:largeHeap=true"
-  android.add_configs: "android:vmSafeMode=true"
-
-# Build optimization
-optimization:
-  reduce_class_files: true
-  reduce_resource_files: true
-  remove_source_code: true
-  optimize_png: true
-  compress_level: 9
-
-# Dependencies for Mini Fire game
-dependencies:
-  python_packages:
-    - "kivy"
-    - "kivymd"
-    - "pillow"
-  
-  system_packages:
-    - "python3-dev"
-    - "libffi-dev"
-    - "libssl-dev"
-    - "libjpeg-dev"
-    - "libzip-dev"
-
-# Build commands sequence
-build_commands:
-  setup: |
-    buildozer init
-    buildozer android clean
+jobs:
+  build:
+    runs-on: ubuntu-latest
     
-  build: |
-    buildozer android debug
-    
-  deploy: |
-    buildozer android deploy
-    
-  run: |
-    buildozer android debug deploy run
-
-# File structure
-files:
-  required:
-    - "main.py"
-    - "buildozer.spec"
-    - "assets/icon.png"
-    - "assets/presplash.png"
-  
-  optional:
-    - "README.md"
-    - "LICENSE"
-    - "requirements.txt"
-
-# Build environment
-environment:
-  python_version: "3.8"
-  buildozer_version: "1.4.0"
-  recommended_os: "Ubuntu 20.04+"
-
-# Troubleshooting
-troubleshooting:
-  common_issues:
-    - "Issue: SDK not found - Solution: Set ANDROIDSDK and ANDROIDNDK paths"
-    - "Issue: Build fails - Solution: Run 'buildozer android clean' first"
-    - "Issue: App crashes - Solution: Check logcat for errors"
-  
-  log_location: ".buildozer/android/platform/build-*/LOGS/"
-
-# APK signing (for release builds)
-signing:
-  release: false
-  keystore: "minifire.keystore"
-  keystore_password: "change_this_password"
-  key_alias: "minifire"
-  key_password: "change_this_password"
-
-# Post-build actions
-post_build:
-  - "cp bin/*.apk ./"
-  - "ls -la *.apk"
-  - "echo 'Build completed successfully!'"
-
-# Build variants
-variants:
-  debug:
-    type: "debug"
-    features: "debug"
-    
-  release:
-    type: "release"
-    features: "release"
-    signing: true
-
-# Build configuration for different devices
-device_configs:
-  low_end:
-    texture_size: "1024"
-    max_fps: "30"
-    
-  high_end:
-    texture_size: "2048"
-    max_fps: "60"
-
-# Metadata for app stores
-store_metadata:
-  short_description: "Mini Fire - Exciting mobile shooting game"
-  full_description: |
-    Mini Fire is an exciting mobile shooting game with endless levels, 
-    multiple characters, and progressive difficulty. Features smooth controls, 
-    various weapons, and engaging gameplay.
-    
-  keywords:
-    - "game"
-    - "shooting"
-    - "action"
-    - "mobile"
-    - "mini fire"
-    
-  category: "GAME_ACTION"
-  content_rating: "EVERYONE"
-  contact_email: "samiul@example.com"
-
-# Version history
-versions:
-  "1.0.0":
-    date: "2024-01-01"
-    changes:
-      - "Initial release"
-      - "Basic gameplay"
-      - "5 characters"
-      - "8 weapons"
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
       
-  "1.1.0":
-    date: "2024-02-01"
-    changes:
-      - "Added new levels"
-      - "Improved graphics"
-      - "Bug fixes"
-
-# Build notes for Samiul
-notes: |
-  To build the APK:
-  1. Install buildozer: pip install buildozer
-  #2. Run: buildozer init
-  3. Run: buildozer android debug
-  4. Find APK in bin/ directory
-  
-  For release build:
-  buildozer android release
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git unzip openjdk-11-jdk \
+          python3-pip autoconf libtool \
+          pkg-config zlib1g-dev \
+          libncurses5-dev libncursesw5-dev \
+          libtinfo5 cmake libffi-dev libssl-dev
+        
+    - name: Install Buildozer
+      run: pip install buildozer
+        
+    - name: Build APK
+      run: buildozer android debug
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: mini-fire-apk
+        path: bin/*.apk
