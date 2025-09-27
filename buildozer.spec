@@ -18,7 +18,7 @@ requirements =
 
 android.accept_sdk_license = True
 # (str) python-for-android branch to use, defaults to master
-p4a.branch = develop
+p4a.branch = master
 [android]
 api = 33
 minapi = 21
