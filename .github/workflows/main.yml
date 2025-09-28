@@ -10,7 +10,7 @@ jobs:
   build-android:
     name: Build Signed Release APK
     # স্থিতিশীল এবং সামঞ্জস্যপূর্ণ রানার ব্যবহার করা হচ্ছে
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
@@ -47,7 +47,7 @@ jobs:
 
       # ধাপ ৪: Buildozer পরিবেশ সেটআপ এবং APK বিল্ড চালানো
       - name: Set up Buildozer and Build APK
-        uses: ArtemSBulgakov/buildozer-action@v1.2.1
+        uses: ArtemSBulgakov/buildozer-action@v1.2.0
         id: buildozer
         with:
           spec_path: buildozer.spec
