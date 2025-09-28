@@ -1,4 +1,4 @@
-# .github/workflows/build-android.yml
+ঐ# .github/workflows/build-android.yml
 
 name: Build Kivy Android App (Release APK)
 
@@ -80,10 +80,6 @@ jobs:
           echo "=== Updated signing configuration in buildozer.spec ==="
           grep -A4 "android.release_key" buildozer.spec
 
-      # ধাপ ৭: Buildozer initialize করা (যদি প্রয়োজন হয়)
-      - name: Initialize Buildozer
-        run: |
-          buildozer init
 
       # ধাপ ৮: Android target ডাউনলোড করা
       - name: Download Android SDK/NDK
