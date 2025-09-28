@@ -1,63 +1,29 @@
-# ফাইলের নাম: .github/workflows/main.yml
-
-name: Build Kivy Android App (Release APK)
+# সরলীকৃত সংস্করণ
+name: Build Kivy Android App
 
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # <-- এই লাইনটি যোগ করা হয়েছে
+  workflow_dispatch:
 
 jobs:
   build-android:
-    name: Build Signed Release APK
     runs-on: ubuntu-22.04
-
+    
     steps:
-      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      # ধাপ ২: স্বয়ংক্রিয়ভাবে Keystore তৈরি করা (আপনার জন্য)
-      - name: Generate Keystore
-        env:
-          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
-        run: |
-          echo "Generating Keystore..."
-          keytool -genkey -v \
-            -keystore release.keystore \
-            -alias $RELEASE_ALIAS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass $RELEASE_PASSWORD \
-            -keypass $RELEASE_PASSWORD \
-            -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
-            -noprompt
-          echo "Keystore generated successfully."
-
-      # ধাপ ৩: buildozer.spec ফাইলে রিলিজ বিল্ডের জন্য তথ্য যোগ করা
-      - name: Update buildozer.spec for release
-        env:
-          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
-        run: |
-          echo "Updating buildozer.spec for release signing..."
-          sed -i 's|^#android.release_key.store =|android.release_key.store = release.keystore|' buildozer.spec
-          sed -i 's|^#android.release_key.alias =|android.release_key.alias = ${{ env.RELEASE_ALIAS }}|' buildozer.spec
-          sed -i 's|^#android.release_key.store_password =|android.release_key.store_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
-          sed -i 's|^#android.release_key.alias_password =|android.release_key.alias_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
-          echo "buildozer.spec updated."
-
-      # ধাপ ৪: Buildozer ব্যবহার করে APK বিল্ড করা (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
-      - name: Build with Buildozer
-        uses: docker://kivy/buildozer:stable
-        with:
-          entrypoint: /bin/bash
-          args: -c "chown -R $(id -u):$(id -g) . && buildozer android release"
-
-      # ধাপ ৫: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
-      - name: Upload Signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-release-apk
-          path: bin/*.apk # buildozer ডিফল্টভাবে bin/ ফোল্ডারে আউটপুট রাখে
-          
+    - name: Build with Buildozer Docker
+      uses: arturbalabanov/buildozer-action@v1
+      with:
+        work-dir: .
+        buildozer-version: stable
+        target: android
+        type: release
+        buildozer-args: ""
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-apk
+        path: bin/*.apk
