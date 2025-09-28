@@ -49,7 +49,7 @@ jobs:
 
       # ধাপ ৪: Buildozer ব্যবহার করে APK বিল্ড করা (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
       - name: Build with Buildozer
-        uses: docker://kivy/buildozer
+        uses: docker://kivy/buildozer:stable
         with:
           entrypoint: /bin/bash
           args: -c "chown -R $(id -u):$(id -g) . && buildozer android release"
