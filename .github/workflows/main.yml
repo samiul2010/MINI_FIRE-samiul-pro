@@ -34,16 +34,25 @@ jobs:
             libffi-dev \
             python3-venv \
             wget \
-            curl
+            curl \
+            libncurses5 \
+            zlib1g-dev
 
       # ধাপ ৩: Python এবং Buildozer সেটআপ করা
       - name: Set up Python and Buildozer
         run: |
           python3 --version
-          pip3 install --upgrade pip
+          pip3 install --upgrade pip wheel setuptools
           pip3 install buildozer cython==0.29.33 virtualenv
 
-      # ধাপ ৪: Keystore তৈরি করা
+      # ধাপ ৪: Buildozer ডিপেন্ডেন্সি ডাউনলোড (প্রথম বিল্ডের জন্য)
+      - name: Download Android dependencies
+        run: |
+          echo "Downloading Android dependencies..."
+          buildozer android update
+          echo "Dependencies downloaded successfully."
+
+      # ধাপ ৫: Keystore তৈরি করা
       - name: Generate Keystore
         env:
           RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
@@ -60,34 +69,30 @@ jobs:
             -noprompt
           echo "Keystore generated successfully."
 
-      # ধাপ ৫: buildozer.spec আপডেট করা (সরলীকৃত)
+      # ধাপ ৬: buildozer.spec আপডেট করা
       - name: Update buildozer.spec for release
         env:
           RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
           echo "Updating buildozer.spec for release signing..."
-          
-          # সরাসরি sed দিয়ে মানগুলো আপডেট করা
           sed -i "s|android.release_key.alias = .*|android.release_key.alias = $RELEASE_ALIAS|" buildozer.spec
           sed -i "s|android.release_key.store_password = .*|android.release_key.store_password = $RELEASE_PASSWORD|" buildozer.spec
           sed -i "s|android.release_key.alias_password = .*|android.release_key.alias_password = $RELEASE_PASSWORD|" buildozer.spec
-          
           echo "Updated buildozer.spec successfully"
-          echo "Show release key settings:"
-          cat buildozer.spec | grep "android.release_key" || echo "No release key lines found, but continuing..."
 
-      # ধাপ ৬: Buildozer ইনিশিয়ালাইজেশন
-      - name: Initialize Buildozer
-        run: |
-          buildozer android clean
-
-      # ধাপ ৭: APK বিল্ড করা
+      # ধাপ ৭: APK বিল্ড করা (debug mode দিয়ে শুরু করুন)
       - name: Build APK with Buildozer
         run: |
           echo "Starting APK build..."
+          # প্রথমে debug mode-এ বিল্ড করুন
+          buildozer -v android debug
+          echo "Debug build completed!"
+          
+          # তারপর release বিল্ড করুন
+          echo "Starting release build..."
           buildozer -v android release
-          echo "Build completed!"
+          echo "Release build completed!"
 
       # ধাপ ৮: APK আপলোড করা
       - name: Upload Signed APK
