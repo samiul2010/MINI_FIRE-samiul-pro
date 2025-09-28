@@ -1,4 +1,4 @@
-name: Build Kivy Android App (Release APK)
+name: Build Android APK with P4A
 
 on:
   push:
@@ -7,58 +7,140 @@ on:
 
 jobs:
   build-android:
-    name: Build Signed Release APK
+    name: Build APK with Python-for-Android
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Android SDK and NDK
+        run: |
+          echo "Using system Android tools:"
+          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+          echo "ANDROID_NDK: $ANDROID_NDK"
+          
+          # Accept Android licenses
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-11-jdk \
-            python3-pip python3-setuptools \
-            autoconf build-essential \
-            libssl-dev libffi-dev \
-            wget curl
+            git \
+            openjdk-11-jdk \
+            python3-pip \
+            python3-venv \
+            autoconf \
+            build-essential \
+            libssl-dev \
+            libffi-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            wget \
+            curl \
+            unzip \
+            zip
 
-      - name: Set up Python and Buildozer
+      - name: Set up Python and P4A
         run: |
-          pip3 install --upgrade pip
-          pip3 install buildozer cython==0.29.33
+          python3 --version
+          pip3 install --upgrade pip virtualenv
+          
+          # Install python-for-android
+          pip3 install python-for-android
+          
+          # Install app requirements
+          pip3 install kivy buildozer
 
-      - name: Generate Keystore
+      - name: Create Keystore
         env:
-          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
           keytool -genkey -v \
             -keystore release.keystore \
-            -alias $RELEASE_ALIAS \
+            -alias $KEY_ALIAS \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass $RELEASE_PASSWORD \
-            -keypass $RELEASE_PASSWORD \
+            -storepass $KEY_PASSWORD \
+            -keypass $KEY_PASSWORD \
             -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
             -noprompt
 
-      - name: Build APK with System NDK
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
-          ANDROID_SDK_HOME: ${{ env.ANDROID_SDK_ROOT }}
+      - name: Create p4a build script
         run: |
-          echo "Using System NDK: $ANDROID_NDK_ROOT"
-          echo "Using System SDK: $ANDROID_SDK_ROOT"
+          cat > build_apk.sh << 'EOF'
+          #!/bin/bash
           
-          # Force buildozer to use system NDK/SDK
+          # Set Android environment
           export ANDROIDSDK="$ANDROID_SDK_ROOT"
-          export ANDROIDNDK="$ANDROID_NDK_ROOT"
+          export ANDROIDNDK="$ANDROID_NDK"
+          export ANDROID_API="33"
           
-          buildozer -v android release
+          # Clean previous builds
+          rm -rf build/ dist/
+          
+          # Create dist directory
+          mkdir -p dist
+          
+          # Build with p4a
+          p4a apk \
+            --requirements=python3,kivy \
+            --package=org.samiul.minifire \
+            --name="MINI FIRE" \
+            --version=1.0.0 \
+            --bootstrap=sdl2 \
+            --dist_name=minifire \
+            --sdk_dir="$ANDROIDSDK" \
+            --ndk_dir="$ANDROIDNDK" \
+            --android_api=33 \
+            --ndk_api=21 \
+            --arch=arm64-v8a \
+            --arch=armeabi-v7a \
+            --orientation=portrait \
+            --window \
+            --release \
+            --keystore=release.keystore \
+            --keystore-passwd:$KEY_PASSWORD \
+            --signkey-alias=$KEY_ALIAS \
+            --private=.
+          
+          echo "Build completed!"
+          EOF
+          
+          chmod +x build_apk.sh
 
-      - name: Upload APK
+      - name: Build APK with P4A
+        env:
+          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+        run: |
+          echo "Starting P4A build..."
+          ./build_apk.sh
+
+      - name: Check for APK files
+        run: |
+          echo "Checking for built APK files..."
+          find . -name "*.apk" -type f | head -10
+          ls -la dist/ 2>/dev/null || echo "No dist directory"
+          ls -la ./*.apk 2>/dev/null || echo "No APK files in root"
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-apk
-          path: bin/*.apk
+          name: p4a-apk
+          path: |
+            *.apk
+            dist/*.apk
+            bin/*.apk
+          retention-days: 7
+
+      - name: Upload Build Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p4a-logs
+          path: |
+            .p4a/
+            build/
+          retention-days: 3
