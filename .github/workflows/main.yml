@@ -1,56 +1,63 @@
-name: Build Android APK with Docker
+# .github/workflows/build-android.yml
+
+name: Build Kivy Android App (Release APK)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ] # শুধুমাত্র main ব্রাঞ্চে পুশ করলে চলবে
 
 jobs:
-  build:
+  build-android:
+    name: Build Signed Release APK
+    # স্থিতিশীল এবং সামঞ্জস্যপূর্ণ রানার ব্যবহার করা হচ্ছে
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Build Docker image with proper permissions
-      run: |
-        cat > Dockerfile << 'EOF'
-        FROM ubuntu:22.04
-        
-        ENV DEBIAN_FRONTEND=noninteractive
-        
-        # System dependencies install
-        RUN apt-get update && apt-get install -y \
-            python3 python3-pip git wget unzip openjdk-17-jdk \
-            autoconf automake libtool pkg-config zlib1g-dev \
-            && apt-get clean
-            
-        # Create non-root user with proper UID that matches host
-        RUN useradd -m -u 1001 builder
-        USER builder
-        WORKDIR /home/builder
-        
-        # Create app directory with proper permissions
-        RUN mkdir -p /home/builder/app
-        WORKDIR /home/builder/app
-        
-        # Buildozer install as non-root
-        RUN pip3 install --user buildozer cython
-        ENV PATH="/home/builder/.local/bin:${PATH}"
-        EOF
-        
-        docker build -t my-buildozer .
+      # ধাপ ২: স্বয়ংক্রিয়ভাবে Keystore তৈরি করা
+      # এই ধাপটি ওয়ার্কফ্লোর ভেতরেই একটি অস্থায়ী Keystore ফাইল তৈরি করবে
+      - name: Generate Keystore
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+        run: |
+          keytool -genkey -v \
+            -keystore release.keystore \
+            -alias $RELEASE_ALIAS \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass $RELEASE_PASSWORD \
+            -keypass $RELEASE_PASSWORD \
+            -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
+            -noprompt
 
-    - name: Pre-create directories with proper permissions
-      run: |
-        mkdir -p .buildozer bin
-        chmod 755 .buildozer bin
+      # ধাপ ৩: buildozer.spec ফাইলে সাইনিং তথ্য যোগ করা
+      # সিক্রেট ব্যবহার করে spec ফাইলকে স্বয়ংক্রিয়ভাবে আপডেট করা
+      - name: Update buildozer.spec for release
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+        run: |
+          sed -i 's|^#android.release_key.store =|android.release_key.store = release.keystore|' buildozer.spec
+          sed -i 's|^#android.release_key.alias =|android.release_key.alias = ${{ env.RELEASE_ALIAS }}|' buildozer.spec
+          sed -i 's|^#android.release_key.store_password =|android.release_key.store_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
+          sed -i 's|^#android.release_key.alias_password =|android.release_key.alias_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
 
-    - name: Run Buildozer with proper volume permissions
-      run: |
-        docker run --rm \
-          -u 1001 \
-          -v "$(pwd)":/home/builder/app \
-          -w /home/builder/app \
-          my-buildozer \
-          bash -c "yes | buildozer android debug"
+      # ধাপ ৪: Buildozer পরিবেশ সেটআপ এবং APK বিল্ড চালানো
+      - name: Set up Buildozer and Build APK
+        uses: ArtemSBulgakov/buildozer-action@v1.2.1
+        id: buildozer
+        with:
+          spec_path: buildozer.spec
+          # রিলিজ APK বিল্ডের জন্য 'release' কমান্ড ব্যবহার করা হচ্ছে
+          command: buildozer android release
+
+      # ধাপ ৫: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-apk # আর্টিফ্যাক্টের নাম
+          path: ${{ steps.buildozer.outputs.filename_dir }}/*.apk # বিল্ড হওয়া APK ফাইলের পাথ
+          
