@@ -1,92 +1,14 @@
-ত্রname: Build Android APK with Docker Linux Environment
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-      
-    - name: Create custom Docker image with Linux environment
-      run: |
-        cat > Dockerfile << 'EOF'
-        FROM ubuntu:22.04
-        
-        # Set environment variables [citation:1][citation:4]
-        ENV DEBIAN_FRONTEND=noninteractive
-        ENV ANDROID_HOME=/opt/android-sdk
-        ENV PATH="${PATH}:${ANDROID_HOME}/tools:${ANDROID_HOME}/platform-tools"
-        
-        # Install all dependencies
-        RUN apt-get update && apt-get install -y \
-            python3 python3-pip python3-venv openjdk-17-jdk git wget curl unzip \
-            build-essential autoconf automake libtool pkg-config zlib1g-dev \
-            libncurses5-dev libtinfo5 libssl-dev libffi-dev cmake ninja-build \
-            && apt-get clean
-        
-        # Install Buildozer
-        RUN pip3 install buildozer cython==0.29.33
-        
-        # Create working directory
-        WORKDIR /app
-        
-        # Accept Android licenses automatically
-        RUN mkdir -p ${ANDROID_HOME}/licenses \
-            && echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > ${ANDROID_HOME}/licenses/android-sdk-license \
-            && echo "84831b9409646a918e30573bab4c9c91346d8abd" > ${ANDROID_HOME}/licenses/android-sdk-preview-license
-        
-        CMD ["bash"]
-        EOF
-        
-        # Build the Docker image
-        docker build -t buildozer-android .
-      
-    - name: Build APK inside Docker container
-      run: |
-        # Run buildozer inside the custom Linux environment
-        docker run --rm \
-          -v "$(pwd)":/app \
-          -w /app \
-          buildozer-android \
-          bash -c "yes | buildozer android clean && buildozer android debug"
-      
-    - name: Verify APK creation
-      run: |
-        if ls bin/*.apk 1> /dev/null 2>&1; then
-          echo "✅ APK successfully created!"
-          ls -la bin/
-          echo "APK file size: $(du -h bin/*.apk | cut -f1)"
-        else
-          echo "❌ APK file not found!"
-          echo "Searching for any APK files..."
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
-          exit 1
-        fi
-        
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-apk-docker
-        path: bin/*.apk
-        retention-days: 30
-        
-    - name: Create Release on tag push
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: bin/*.apk
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Buildozer cython
+  # You may pin to the exact commit or the version.
+  # uses: 102757017/buildozer-action@49cb3ff7a94238f0dab11058bf5c4c997d15bfcd
+  uses: 102757017/buildozer-action@v1
+  with:
+    # Command to start Buildozer. Set to `buildozer ios debug` for iOS
+    command: # default is buildozer android debug
+    # Path to cloned repository. Set if you specified path for `actions/checkout` action.
+    repository_root: # default is .
+    # Working directory where buildozer.spec is located. Set to `src` if buildozer.spec is in `src` directory
+    workdir: # default is .
+    # Version of Buildozer to install. By default installs latest release
+    buildozer_version: # default is stable
+          
