@@ -1,4 +1,4 @@
-name: Build Android APK with P4A(samiul)
+name: Build Android APK with P4A(samiul1)
 
 on:
   push:
@@ -26,14 +26,46 @@ jobs:
           rm -rf ~/.cache/python-for-android
           rm -rf ~/.p4a
 
+      - name: Verify Python Files
+        run: |
+          echo "=== Checking Python files ==="
+          find . -name "*.py" -type f
+          echo "=== Current directory ==="
+          ls -la
+          echo "=== Main file check ==="
+          if [ -f "main.py" ]; then
+            echo "✅ main.py found"
+          else
+            echo "❌ main.py not found - checking for other Python files"
+            PY_FILES=$(find . -maxdepth 1 -name "*.py" -type f)
+            if [ -n "$PY_FILES" ]; then
+              echo "Found Python files: $PY_FILES"
+              # প্রথম Python file টি main.py হিসেবে copy করুন
+              FIRST_PY=$(echo "$PY_FILES" | head -1)
+              echo "Copying $FIRST_PY to main.py"
+              cp "$FIRST_PY" main.py
+            else
+              echo "❌ No Python files found! Creating basic main.py"
+              cat > main.py << 'EOF'
+import kivy
+from kivy.app import App
+from kivy.uix.label import Label
+
+class MyApp(App):
+    def build(self):
+        return Label(text='MINI FIRE App')
+
+if __name__ == '__main__':
+    MyApp().run()
+EOF
+            fi
+          fi
+
       - name: Set up Android SDK and NDK
         run: |
           echo "Using system Android tools:"
           echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
           echo "CUSTOM_NDK_PATH: $CUSTOM_NDK_PATH"
-          
-          # Accept Android licenses
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
 
       - name: Install system dependencies
         run: |
@@ -63,7 +95,7 @@ jobs:
           pip3 install python-for-android cython==0.29.33
           
           # Install app requirements
-          pip3 install kivy buildozer
+          pip3 install kivy
 
       - name: Create Keystore
         env:
@@ -79,34 +111,27 @@ jobs:
             -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
             -noprompt
 
-      - name: Build APK with P4A Direct Command
+      - name: Build APK with arm64-v8a only
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          echo "Starting P4A build with NDK 25b..."
+          echo "Building APK with arm64-v8a only..."
           echo "NDK Path: $CUSTOM_NDK_PATH"
           
-          # Set environment variables
-          export ANDROIDSDK="$ANDROID_SDK_ROOT"
-          export ANDROIDNDK="$CUSTOM_NDK_PATH"
-          export ANDROID_NDK_HOME="$CUSTOM_NDK_PATH"
-          
-          # Direct P4A command without script - ALL IN PROPER MULTI-LINE FORMAT
+          # শুধু arm64-v8a architecture দিয়ে build
           p4a apk \
             --requirements=python3,kivy \
             --package=org.samiul.minifire \
             --name="MINI FIRE" \
-            --version=1.0.0 \
+            --version=1.0 \
             --bootstrap=sdl2 \
             --dist_name=minifire \
             --sdk_dir="$ANDROID_SDK_ROOT" \
             --ndk_dir="$CUSTOM_NDK_PATH" \
             --android_api=33 \
-            --arch=arm64-v8a \
-           #--arch=armeabi-v7a \
+            --arch=arm64-v8a \  # শুধু একটি architecture
             --orientation=portrait \
-            --window \
             --release \
             --keystore=release.keystore \
             --keystore-passwd:$KEY_PASSWORD \
@@ -115,28 +140,16 @@ jobs:
       - name: Check for APK files
         run: |
           echo "Checking for built APK files..."
-          find . -name "*.apk" -type f | head -10
-          ls -la dist/ 2>/dev/null || echo "No dist directory"
-          ls -la ./*.apk 2>/dev/null || echo "No APK files in root"
+          find . -name "*.apk" -type f
+          find ~ -name "*.apk" -type f 2>/dev/null | head -10
           ls -la ~/.local/share/python-for-android/dists/minifire/dist/*.apk 2>/dev/null || echo "No APK in P4A dist"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: p4a-apk
+          name: minifire-arm64-apk
           path: |
+            ~/.local/share/python-for-android/dists/minifire/dist/*.apk
             *.apk
             dist/*.apk
-            bin/*.apk
-            ~/.local/share/python-for-android/dists/minifire/dist/*.apk
           retention-days: 7
-
-      - name: Upload Build Logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: p4a-logs
-          path: |
-            .p4a/
-            build/
-          retention-days: 3
