@@ -79,26 +79,20 @@ jobs:
             -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
             -noprompt
 
-      - name: Create p4a build script with fixed NDK
+      - name: Build APK with P4A Direct Command
+        env:
+          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          cat > build_apk.sh << 'EOF'
-          #!/bin/bash
+          echo "Starting P4A build with NDK 25b..."
+          echo "NDK Path: $CUSTOM_NDK_PATH"
           
-          # Set Android environment with OUR NDK
+          # Set environment variables
           export ANDROIDSDK="$ANDROID_SDK_ROOT"
           export ANDROIDNDK="$CUSTOM_NDK_PATH"
           export ANDROID_NDK_HOME="$CUSTOM_NDK_PATH"
-          export ANDROID_API="33"
           
-          # Clean previous builds
-          rm -rf build/ dist/
-          
-          # Create dist directory
-          mkdir -p dist
-          
-          echo "Using NDK: $ANDROIDNDK"
-          
-          # Build with p4a using our NDK
+          # Direct P4A command without script - ALL IN PROPER MULTI-LINE FORMAT
           p4a apk \
             --requirements=python3,kivy \
             --package=org.samiul.minifire \
@@ -106,34 +100,17 @@ jobs:
             --version=1.0.0 \
             --bootstrap=sdl2 \
             --dist_name=minifire \
-            --sdk_dir="$ANDROIDSDK" \
-            --ndk_dir="$ANDROIDNDK" \
+            --sdk_dir="$ANDROID_SDK_ROOT" \
+            --ndk_dir="$CUSTOM_NDK_PATH" \
             --android_api=33 \
-            
             --arch=arm64-v8a \
-            --arch=armeabi-v7a \
+           #--arch=armeabi-v7a \
             --orientation=portrait \
             --window \
             --release \
             --keystore=release.keystore \
             --keystore-passwd:$KEY_PASSWORD \
-            --signkey-alias=$KEY_ALIAS \
-            
-          
-          echo "Build completed!"
-          EOF
-          
-          chmod +x build_apk.sh
-
-      - name: Build APK with P4A
-        env:
-          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
-          CUSTOM_NDK_PATH: ${{ env.CUSTOM_NDK_PATH }}
-        run: |
-          echo "Starting P4A build with NDK 25b..."
-          echo "NDK Path: $CUSTOM_NDK_PATH"
-          ./build_apk.sh
+            --signkey-alias=$KEY_ALIAS
 
       - name: Check for APK files
         run: |
