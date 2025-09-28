@@ -45,12 +45,11 @@ jobs:
           pip3 install --upgrade pip wheel setuptools
           pip3 install buildozer cython==0.29.33 virtualenv
 
-      # ধাপ ৪: Buildozer ডিপেন্ডেন্সি ডাউনলোড (প্রথম বিল্ডের জন্য)
-      - name: Download Android dependencies
+      # ধাপ ৪: Buildozer ডিরেক্টরি স্ট্রাকচার তৈরি করা
+      - name: Setup Buildozer directories
         run: |
-          echo "Downloading Android dependencies..."
-          buildozer android update
-          echo "Dependencies downloaded successfully."
+          mkdir -p ~/.buildozer/android/packages
+          mkdir -p ~/.buildozer/android/platform
 
       # ধাপ ৫: Keystore তৈরি করা
       - name: Generate Keystore
@@ -81,20 +80,32 @@ jobs:
           sed -i "s|android.release_key.alias_password = .*|android.release_key.alias_password = $RELEASE_PASSWORD|" buildozer.spec
           echo "Updated buildozer.spec successfully"
 
-      # ধাপ ৭: APK বিল্ড করা (debug mode দিয়ে শুরু করুন)
-      - name: Build APK with Buildozer
+      # ধাপ ৭: Buildozer কনফিগারেশন আপডেট করা
+      - name: Configure Buildozer for first build
         run: |
-          echo "Starting APK build..."
-          # প্রথমে debug mode-এ বিল্ড করুন
-          buildozer -v android debug
-          echo "Debug build completed!"
-          
-          # তারপর release বিল্ড করুন
-          echo "Starting release build..."
-          buildozer -v android release
-          echo "Release build completed!"
+          echo "Configuring Buildozer for first build..."
+          # Buildozer কে force করে প্রথমে সব ডাউনলোড করতে বলা
+          buildozer android update 2>&1 | tee download.log || echo "Download started, continuing..."
+          sleep 10
 
-      # ধাপ ৮: APK আপলোড করা
+      # ধাপ ৮: APK বিল্ড করা (সরাসরি release)
+      - name: Build Release APK
+        run: |
+          echo "Starting release APK build..."
+          # লগ লেভেল 2 সেট করে বিস্তারিত লগ দেখানো
+          buildozer -v android release 2>&1 | tee build.log
+          
+          # যদি APK তৈরি হয়ে থাকে
+          if ls bin/*.apk 1> /dev/null 2>&1; then
+            echo "APK built successfully!"
+            ls -la bin/
+          else
+            echo "APK not found, checking logs..."
+            cat build.log
+            exit 1
+          fi
+
+      # ধাপ ৯: APK আপলোড করা
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
@@ -102,11 +113,14 @@ jobs:
           path: bin/*.apk
           retention-days: 7
 
-      # ধাপ ৯: বিল্ড লগ সংরক্ষণ
+      # ধাপ ১০: বিল্ড লগ সংরক্ষণ
       - name: Upload Build Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: build-logs
-          path: .buildozer/
+          path: |
+            build.log
+            download.log
+            .buildozer/
           retention-days: 3
