@@ -1,0 +1,119 @@
+# .github/workflows/build-android.yml
+
+name: Build Kivy Android App (Release APK)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-android:
+    name: Build Signed Release APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ধাপ ২: Python সেটআপ করা
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # ধাপ ৩: System dependencies ইন্সটল করা
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-11-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            python3-pip
+
+      # ধাপ ৪: Buildozer ইন্সটল করা
+      - name: Install Buildozer
+        run: |
+          pip install --upgrade pip
+          pip install buildozer
+          pip install cython
+
+      # ধাপ ৫: Keystore তৈরি করা
+      - name: Generate Keystore
+        run: |
+          keytool -genkey -v \
+            -keystore release.keystore \
+            -alias "${{ secrets.RELEASE_ALIAS }}" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "${{ secrets.RELEASE_PASSWORD }}" \
+            -keypass "${{ secrets.RELEASE_PASSWORD }}" \
+            -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
+            -noprompt
+
+      # ধাপ ৬: buildozer.spec ফাইল আপডেট করা
+      - name: Update buildozer.spec for release
+        run: |
+          # প্রথমে buildozer.spec ফাইল backup নিন
+          cp buildozer.spec buildozer.spec.backup
+          
+          # sed commands with proper escaping
+          sed -i "s|^#android.release_key.store =.*|android.release_key.store = release.keystore|" buildozer.spec
+          sed -i "s|^#android.release_key.alias =.*|android.release_key.alias = ${{ secrets.RELEASE_ALIAS }}|" buildozer.spec
+          sed -i "s|^#android.release_key.store_password =.*|android.release_key.store_password = ${{ secrets.RELEASE_PASSWORD }}|" buildozer.spec
+          sed -i "s|^#android.release_key.alias_password =.*|android.release_key.alias_password = ${{ secrets.RELEASE_PASSWORD }}|" buildozer.spec
+          
+          # Verify changes
+          echo "=== Updated signing configuration in buildozer.spec ==="
+          grep -A4 "android.release_key" buildozer.spec
+
+      # ধাপ ৭: Buildozer initialize করা (যদি প্রয়োজন হয়)
+      - name: Initialize Buildozer
+        run: |
+          buildozer init
+
+      # ধাপ ৮: Android target ডাউনলোড করা
+      - name: Download Android SDK/NDK
+        run: |
+          buildozer android update
+
+      # ধাপ ৯: Release APK বিল্ড করা
+      - name: Build Release APK
+        run: |
+          buildozer -v android release
+        env:
+          P4A_RELEASE_KEYSTORE: release.keystore
+          P4A_RELEASE_KEYSTORE_PASSWD: ${{ secrets.RELEASE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS_PASSWD: ${{ secrets.RELEASE_PASSWORD }}
+          P4A_RELEASE_KEYALIAS: ${{ secrets.RELEASE_ALIAS }}
+
+      # ধাপ ১০: APK আপলোড করা
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-apk
+          path: bin/*.apk
+          retention-days: 7
+
+      # ধাপ ১১: Build logs সংরক্ষণ করা
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            .buildozer/
+            buildozer.spec.backup
