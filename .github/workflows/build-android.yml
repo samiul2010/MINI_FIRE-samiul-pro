@@ -33,6 +33,7 @@ jobs:
     - name: Install P4A
       run: |
         pip3 install python-for-android kivy
+        pip3 install cython 
 
     - name: Create Keystore
       env:
