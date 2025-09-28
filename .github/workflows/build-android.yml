@@ -59,7 +59,7 @@ jobs:
           --dist_name=minifire \
           --sdk_dir=$ANDROID_SDK_ROOT \
           --ndk_dir=$ANDROID_NDK_HOME \
-          --android_api=29 \
+          --android_api=33 \
           --arch=arm64-v8a \
           --arch=armeabi-v7a \
           --orientation=portrait \
