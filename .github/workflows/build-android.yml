@@ -47,19 +47,8 @@ jobs:
             else
               echo "❌ No Python files found! Creating basic main.py"
               cat > main.py << 'EOF'
-import kivy
-from kivy.app import App
-from kivy.uix.label import Label
 
-class MyApp(App):
-    def build(self):
-        return Label(text='MINI FIRE App')
 
-if __name__ == '__main__':
-    MyApp().run()
-EOF
-            fi
-          fi
 
       - name: Set up Android SDK and NDK
         run: |
