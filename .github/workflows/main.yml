@@ -1,5 +1,6 @@
-# সরলীকৃত সংস্করণ
-name: Build Kivy Android App
+# ফাইলের নাম: .github/workflows/main.yml
+
+name: Build Kivy Android App (Release APK)
 
 on:
   push:
@@ -8,22 +9,137 @@ on:
 
 jobs:
   build-android:
+    name: Build Signed Release APK
     runs-on: ubuntu-22.04
-    
-    steps:
-    - uses: actions/checkout@v4
 
-    - name: Build with Buildozer Docker
-      uses: arturbalabanov/buildozer-action@v1
-      with:
-        work-dir: .
-        buildozer-version: stable
-        target: android
-        type: release
-        buildozer-args: ""
-        
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-apk
-        path: bin/*.apk
+    steps:
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ধাপ ২: সিস্টেম ডিপেন্ডেন্সি ইনস্টল করা
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-11-jdk \
+            python3-pip \
+            python3-setuptools \
+            autoconf \
+            build-essential \
+            libssl-dev \
+            libffi-dev \
+            python3-venv \
+            wget \
+            curl
+
+      # ধাপ ৩: Python এবং Buildozer সেটআপ করা
+      - name: Set up Python and Buildozer
+        run: |
+          python3 --version
+          pip3 install --upgrade pip
+          pip3 install buildozer cython==0.29.33 virtualenv
+
+      # ধাপ ৪: Android SDK এবং NDK সেটআপ করা
+      - name: Set up Android SDK and NDK
+        run: |
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          
+          # Android SDK টুলস ডাউনলোড
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
+          mkdir -p android-sdk/cmdline-tools
+          unzip -q commandlinetools-linux-8512546_latest.zip -d android-sdk/cmdline-tools/
+          mv android-sdk/cmdline-tools/cmdline-tools android-sdk/cmdline-tools/latest
+          
+          # environment variables সেট করা
+          echo "ANDROID_SDK_ROOT=$PWD/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$PWD/android-sdk/cmdline-tools/latest/bin:$PWD/android-sdk/platform-tools:$PATH" >> $GITHUB_ENV
+
+      # ধাপ ৫: Android SDK কম্পোনেন্টস ইনস্টল করা
+      - name: Install Android SDK components
+        run: |
+          yes | $PWD/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$PWD/android-sdk "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+          yes | $PWD/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$PWD/android-sdk "ndk;25.1.8937393"
+
+      # ধাপ ৬: Keystore তৈরি করা
+      - name: Generate Keystore
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+        run: |
+          echo "Generating Keystore..."
+          keytool -genkey -v \
+            -keystore release.keystore \
+            -alias $RELEASE_ALIAS \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass $RELEASE_PASSWORD \
+            -keypass $RELEASE_PASSWORD \
+            -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
+            -noprompt
+          echo "Keystore generated successfully."
+
+      # ধাপ ৭: buildozer.spec আপডেট করা
+      - name: Update buildozer.spec for release
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+        run: |
+          echo "Updating buildozer.spec for release signing..."
+          
+          # backup তৈরি করা
+          cp buildozer.spec buildozer.spec.backup
+          
+          # sed কমান্ড দিয়ে আপডেট করা
+          sed -i "s|^#android.release_key.store = .*|android.release_key.store = release.keystore|" buildozer.spec
+          sed -i "s|^#android.release_key.alias = .*|android.release_key.alias = $RELEASE_ALIAS|" buildozer.spec
+          sed -i "s|^#android.release_key.store_password = .*|android.release_key.store_password = $RELEASE_PASSWORD|" buildozer.spec
+          sed -i "s|^#android.release_key.alias_password = .*|android.release_key.alias_password = $RELEASE_PASSWORD|" buildozer.spec
+          
+          # log দেখানো
+          echo "Updated buildozer.spec:"
+          grep "android.release_key" buildozer.spec
+          echo "buildozer.spec updated."
+
+      # ধাপ ৮: Buildozer ইনিশিয়ালাইজেশন (যদি প্রয়োজন হয়)
+      - name: Initialize Buildozer if needed
+        run: |
+          if [ ! -f ".buildozer/config" ]; then
+            echo "Initializing Buildozer..."
+            buildozer init
+          else
+            echo "Buildozer already initialized."
+          fi
+
+      # ধাপ ৯: APK বিল্ড করা
+      - name: Build APK with Buildozer
+        run: |
+          export ANDROID_SDK_ROOT=$PWD/android-sdk
+          export ANDROID_NDK_HOME=$PWD/android-sdk/ndk/25.1.8937393
+          export PATH=$PWD/android-sdk/cmdline-tools/latest/bin:$PWD/android-sdk/platform-tools:$PATH
+          
+          echo "Starting APK build..."
+          buildozer android clean
+          buildozer android release
+          echo "Build completed!"
+
+      # ধাপ ১০: APK আপলোড করা
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-apk
+          path: bin/*.apk
+          retention-days: 7
+
+      # ধাপ ১১: বিল্ড লগ সংরক্ষণ
+      - name: Upload Build Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-logs
+          path: |
+            .buildozer/
+          retention-days: 3
