@@ -1,6 +1,6 @@
 # ফাইলের নাম: .github/workflows/main.yml
 
-name: Build Android APK with P4A(samiul2)
+name: Build Kivy Android App (Release APK)
 
 on:
   push:
@@ -9,71 +9,51 @@ on:
 
 jobs:
   build-android:
-    name: Build APK with Python-for-Android
+    name: Build Signed Release APK with Buildozer
     runs-on: ubuntu-22.04
 
     steps:
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ধাপ ১: Java এবং সিস্টেম টুলস ইনস্টল করা
-      - name: Install system dependencies
+      # ধাপ ২: স্বয়ংক্রিয়ভাবে Keystore তৈরি করা
+      - name: Generate Keystore
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk python3-pip python3-venv autoconf build-essential libssl-dev libffi-dev zlib1g-dev libncurses5-dev wget curl unzip zip
-          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
+          keytool -genkey -v -keystore release.keystore -alias $RELEASE_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $RELEASE_PASSWORD -keypass $RELEASE_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ২: Android SDK এবং NDK 25b ইনস্টল করা (সবচেয়ে গুরুত্বপূর্ণ নতুন ধাপ)
-      - name: Set up Android SDK and NDK
-        uses: android-actions/setup-android@v3.2.1
-        with:
-          # আমরা NDK 25b ব্যবহার করছি 'ALooper_pollAll' এরর এড়ানোর জন্য
-          ndk-version: '25.2.9519653' # এটি NDK 25b এর অফিসিয়াল ভার্সন নম্বর
-          # প্রয়োজনীয় SDK কম্পোনেন্ট
-          build-tools-version: '33.0.2'
-          platforms: 'android-33'
-
-      # ধাপ ৩: Python এবং P4A ইনস্টল করা
-      - name: Set up Python and P4A
+      # ধাপ ৩: buildozer.spec ফাইলে রিলিজ বিল্ডের জন্য তথ্য যোগ করা
+      - name: Update buildozer.spec for release
+        env:
+          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
+          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          pip3 install --upgrade pip
-          pip3 install "python-for-android==2024.05.21" kivy # নির্দিষ্ট এবং পরীক্ষিত ভার্সন
+          sed -i 's|^#android.release_key.store =|android.release_key.store = release.keystore|' buildozer.spec
+          sed -i 's|^#android.release_key.alias =|android.release_key.alias = ${{ env.RELEASE_ALIAS }}|' buildozer.spec
+          sed -i 's|^#android.release_key.store_password =|android.release_key.store_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
+          sed -i 's|^#android.release_key.alias_password =|android.release_key.alias_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
           
-      # ধাপ ৪: Keystore তৈরি করা
-      - name: Create Keystore
-        env:
-          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
-        run: |
-          keytool -genkey -v -keystore release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
+          # নিশ্চিত করা হচ্ছে যে সঠিক NDK ভার্সন ব্যবহৃত হচ্ছে
+          if ! grep -q "android.ndk = 25b" buildozer.spec; then
+            echo "" >> buildozer.spec
+            echo "# Force specific NDK version to avoid 'ALooper_pollAll' error" >> buildozer.spec
+            echo "android.ndk = 25b" >> buildozer.spec
+          fi
 
-      # ধাপ ৫: P4A দিয়ে APK বিল্ড করা
-      - name: Build APK with P4A
-        env:
-          KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
-        run: |
-          p4a apk \
-            --requirements=python3,kivy \
-            --package=org.samiul.minifire \
-            --name="MINI FIRE" \
-            --version=1.0.0 \
-            --bootstrap=sdl2 \
-            --dist_name=minifire \
-            --arch=arm64-v8a \
-            --orientation=portrait \
-            --window \
-            --release \
-            --keystore=release.keystore \
-            --keystore-password="$KEY_PASSWORD" \
-            --signkey-alias="$KEY_ALIAS" \
-            --signkey-password="$KEY_PASSWORD" \
-            --private=.
+      # ধাপ ৪: Buildozer ব্যবহার করে APK বিল্ড করা (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
+      - name: Build with Buildozer
+        uses: docker://kivy/buildozer
+        with:
+          entrypoint: /bin/bash
+          args: -c "chown -R $(id -u):$(id -g) . && buildozer android release"
 
-      # ধাপ ৬: বিল্ড হওয়া APK ফাইল আপলোড করা
-      - name: Upload APK Artifact
+      # ধাপ ৫: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: p4a-signed-apk
-          path: ./*.apk
+          name: signed-release-apk
+          path: bin/*.apk
           
