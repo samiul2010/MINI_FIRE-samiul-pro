@@ -1,4 +1,6 @@
-name: Build Android APK with P4A(samiul1)
+# ফাইলের নাম: .github/workflows/main.yml
+
+name: Build Android APK with P4A(samiul2)
 
 on:
   push:
@@ -14,131 +16,64 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download Compatible NDK 25b
-        run: |
-          wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          unzip -q android-ndk-r25b-linux.zip
-          echo "CUSTOM_NDK_PATH=$(pwd)/android-ndk-r25b" >> $GITHUB_ENV
-
-      - name: Clean P4A Cache
-        run: |
-          rm -rf ~/.local/share/python-for-android
-          rm -rf ~/.cache/python-for-android
-          rm -rf ~/.p4a
-
-      - name: Verify Python Files
-        run: |
-          echo "=== Checking Python files ==="
-          find . -name "*.py" -type f
-          echo "=== Current directory ==="
-          ls -la
-          echo "=== Main file check ==="
-          if [ -f "main.py" ]; then
-            echo "✅ main.py found"
-          else
-            echo "❌ main.py not found - checking for other Python files"
-            PY_FILES=$(find . -maxdepth 1 -name "*.py" -type f)
-            if [ -n "$PY_FILES" ]; then
-              echo "Found Python files: $PY_FILES"
-              # প্রথম Python file টি main.py হিসেবে copy করুন
-              FIRST_PY=$(echo "$PY_FILES" | head -1)
-              echo "Copying $FIRST_PY to main.py"
-              cp "$FIRST_PY" main.py
-            else
-              echo "❌ No Python files found! Creating basic main.py"
-              cat > main.py << 'EOF'
-
-
-
-      - name: Set up Android SDK and NDK
-        run: |
-          echo "Using system Android tools:"
-          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-          echo "CUSTOM_NDK_PATH: $CUSTOM_NDK_PATH"
-
+      # ধাপ ১: Java এবং সিস্টেম টুলস ইনস্টল করা
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            openjdk-11-jdk \
-            python3-pip \
-            python3-venv \
-            autoconf \
-            build-essential \
-            libssl-dev \
-            libffi-dev \
-            zlib1g-dev \
-            libncurses5-dev \
-            wget \
-            curl \
-            unzip \
-            zip
+          sudo apt-get install -y openjdk-11-jdk python3-pip python3-venv autoconf build-essential libssl-dev libffi-dev zlib1g-dev libncurses5-dev wget curl unzip zip
+          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))" >> $GITHUB_ENV
 
+      # ধাপ ২: Android SDK এবং NDK 25b ইনস্টল করা (সবচেয়ে গুরুত্বপূর্ণ নতুন ধাপ)
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3.2.1
+        with:
+          # আমরা NDK 25b ব্যবহার করছি 'ALooper_pollAll' এরর এড়ানোর জন্য
+          ndk-version: '25.2.9519653' # এটি NDK 25b এর অফিসিয়াল ভার্সন নম্বর
+          # প্রয়োজনীয় SDK কম্পোনেন্ট
+          build-tools-version: '33.0.2'
+          platforms: 'android-33'
+
+      # ধাপ ৩: Python এবং P4A ইনস্টল করা
       - name: Set up Python and P4A
         run: |
-          python3 --version
-          pip3 install --upgrade pip virtualenv
+          pip3 install --upgrade pip
+          pip3 install "python-for-android==2024.05.21" kivy # নির্দিষ্ট এবং পরীক্ষিত ভার্সন
           
-          # Install python-for-android with Cython
-          pip3 install python-for-android cython==0.29.33
-          
-          # Install app requirements
-          pip3 install kivy
-
+      # ধাপ ৪: Keystore তৈরি করা
       - name: Create Keystore
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          keytool -genkey -v \
-            -keystore release.keystore \
-            -alias $KEY_ALIAS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass $KEY_PASSWORD \
-            -keypass $KEY_PASSWORD \
-            -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" \
-            -noprompt
+          keytool -genkey -v -keystore release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      - name: Build APK with arm64-v8a only
+      # ধাপ ৫: P4A দিয়ে APK বিল্ড করা
+      - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          echo "Building APK with arm64-v8a only..."
-          echo "NDK Path: $CUSTOM_NDK_PATH"
-          
-          # শুধু arm64-v8a architecture দিয়ে build
           p4a apk \
             --requirements=python3,kivy \
             --package=org.samiul.minifire \
             --name="MINI FIRE" \
-            --version=1.0 \
+            --version=1.0.0 \
             --bootstrap=sdl2 \
             --dist_name=minifire \
-            --sdk_dir="$ANDROID_SDK_ROOT" \
-            --ndk_dir="$CUSTOM_NDK_PATH" \
-            --android_api=33 \
-            --arch=arm64-v8a \  # শুধু একটি architecture
+            --arch=arm64-v8a \
             --orientation=portrait \
+            --window \
             --release \
             --keystore=release.keystore \
-            --keystore-passwd:$KEY_PASSWORD \
-            --signkey-alias=$KEY_ALIAS
+            --keystore-password="$KEY_PASSWORD" \
+            --signkey-alias="$KEY_ALIAS" \
+            --signkey-password="$KEY_PASSWORD" \
+            --private=.
 
-      - name: Check for APK files
-        run: |
-          echo "Checking for built APK files..."
-          find . -name "*.apk" -type f
-          find ~ -name "*.apk" -type f 2>/dev/null | head -10
-          ls -la ~/.local/share/python-for-android/dists/minifire/dist/*.apk 2>/dev/null || echo "No APK in P4A dist"
-
+      # ধাপ ৬: বিল্ড হওয়া APK ফাইল আপলোড করা
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: minifire-arm64-apk
-          path: |
-            ~/.local/share/python-for-android/dists/minifire/dist/*.apk
-            *.apk
-            dist/*.apk
-          retention-days: 7
+          name: p4a-signed-apk
+          path: ./*.apk
+          
