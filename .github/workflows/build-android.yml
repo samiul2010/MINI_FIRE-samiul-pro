@@ -1,6 +1,6 @@
 # ফাইলের নাম: .github/workflows/main.yml
 
-name: Build Android APK with Python-for-Android (Direct NDK Setup)
+name: Build Android APK with Python-for-Android(Samiul)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-android:
-    name: Build APK with P4A
+    name: Build APK with Python-for-Android
     runs-on: ubuntu-22.04
 
     steps:
@@ -17,33 +17,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ধাপ ২: Java 11 সেটআপ করা (p4a এর জন্য স্থিতিশীল)
-      - name: Set up JDK 11
+      # ধাপ ২: Java 17 সেটআপ করা (মূল সমাধান)
+      # Android SDK Manager-এর জন্য Java 17 প্রয়োজন
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
 
-      # ধাপ ৩: সরাসরি NDK 25b ডাউনলোড এবং সেটআপ করা (সবচেয়ে গুরুত্বপূর্ণ এবং নির্ভরযোগ্য ধাপ)
-      - name: Download and set up NDK 25b
-        run: |
-          # NDK 25b ডাউনলোড
-          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          # আনজিপ করা
-          unzip -q android-ndk-r25b-linux.zip
-          # এনভায়রনমেন্ট ভেরিয়েবল সেট করা যাতে p4a এটি খুঁজে পায়
-          echo "ANDROID_NDK_HOME=$(pwd )/android-ndk-r25b" >> $GITHUB_ENV
-          echo "NDK_VER=r25b" >> $GITHUB_ENV
-          echo "NDK path set to: $(pwd)/android-ndk-r25b"
+      # ধাপ ৩: Android SDK এবং NDK 25b ইনস্টল করা
+      # android-actions/setup-android অ্যাকশনটি এখন সঠিকভাবে কাজ করবে
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+        with:
+          # packages ইনপুট ব্যবহার করে নির্দিষ্ট ভার্সন ইনস্টল করা
+          packages: 'ndk;25.2.9519653'
 
       # ধাপ ৪: Python এবং প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
-      - name: Set up Python and install dependencies
+      - name: Set up Python and P4A
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      - run: |
+          python-version: '3.9' # একটি স্থিতিশীল পাইথন ভার্সন
+      - name: Install dependencies
+        run: |
           pip install --upgrade pip
-          pip install "cython<3.0"
+          pip install "cython<3.0" # Cython 3+ এর সাথে p4a এর কিছু সামঞ্জস্যতার সমস্যা আছে
           pip install python-for-android kivy==2.1.0
 
       # ধাপ ৫: Keystore তৈরি করা
@@ -54,13 +52,14 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৬: P4A দিয়ে APK বিল্ড করা
+     
+
+      # ধাপ ৬: P4A দিয়ে APK বিল্ড করা (সঠিক আর্গুমেন্ট সহ)
       - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          # p4a কে SDK স্বয়ংক্রিয়ভাবে ডাউনলোড করতে দেওয়া হচ্ছে
           p4a apk \
             --requirements=python3,kivy==2.1.0,android,jnius,sqlite3,openssl,requests,pillow,pyjnius \
             --package=com.samiul.minifire \
@@ -72,11 +71,15 @@ jobs:
             --orientation=portrait \
             --window \
             --release \
-            --keystore=release.keystore \
-            --keystore-password="$KEY_PASSWORD" \
-            --signkey-alias="$KEY_ALIAS" \
-            --signkey-password="$KEY_PASSWORD" \
-            --private=.
+            --private=. \
+            --sign \
+            --keystore release.keystore \
+            --keystore_pass "$KEY_PASSWORD" \
+            --alias "$KEY_ALIAS" \
+            --alias_pass "$KEY_PASSWORD"
+
+
+
 
       # ধাপ ৭: বিল্ড হওয়া APK ফাইল আপলোড করা
       - name: Upload APK Artifact
@@ -84,4 +87,5 @@ jobs:
         with:
           name: p4a-signed-apk
           path: ./*.apk
+
           
