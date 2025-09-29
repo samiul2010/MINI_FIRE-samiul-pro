@@ -26,26 +26,25 @@ jobs:
           keytool -genkey -v -keystore release.keystore -alias $RELEASE_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $RELEASE_PASSWORD -keypass $RELEASE_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
       # ধাপ ৩: buildozer.spec ফাইলে রিলিজ বিল্ডের জন্য তথ্য যোগ করা
-      - name: Update buildozer.spec for release
-        env:
-          RELEASE_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
-          RELEASE_ALIAS: ${{ secrets.RELEASE_ALIAS }}
+      - name: Update buildozer.spec for release and NDK
         run: |
+          # রিলিজ সাইনিং তথ্য যোগ করা
           sed -i 's|^#android.release_key.store =|android.release_key.store = release.keystore|' buildozer.spec
-          sed -i 's|^#android.release_key.alias =|android.release_key.alias = ${{ env.RELEASE_ALIAS }}|' buildozer.spec
-          sed -i 's|^#android.release_key.store_password =|android.release_key.store_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
-          sed -i 's|^#android.release_key.alias_password =|android.release_key.alias_password = ${{ env.RELEASE_PASSWORD }}|' buildozer.spec
+          sed -i 's|^#android.release_key.alias =|android.release_key.alias = ${{ secrets.RELEASE_ALIAS }}|' buildozer.spec
+          sed -i 's|^#android.release_key.store_password =|android.release_key.store_password = ${{ secrets.RELEASE_PASSWORD }}|' buildozer.spec
+          sed -i 's|^#android.release_key.alias_password =|android.release_key.alias_password = ${{ secrets.RELEASE_PASSWORD }}|' buildozer.spec
           
-          # নিশ্চিত করা হচ্ছে যে সঠিক NDK ভার্সন ব্যবহৃত হচ্ছে
-          if ! grep -q "android.ndk = 25b" buildozer.spec; then
+          # NDK ভার্সন নির্দিষ্ট করা (যদি না থাকে)
+          if ! grep -q "android.ndk =" buildozer.spec; then
             echo "" >> buildozer.spec
             echo "# Force specific NDK version to avoid 'ALooper_pollAll' error" >> buildozer.spec
             echo "android.ndk = 25b" >> buildozer.spec
           fi
 
-      # ধাপ ৪: Buildozer ব্যবহার করে APK বিল্ড করা (সবচেয়ে নির্ভরযোগ্য পদ্ধতি)
+      # ধাপ ৪: Buildozer ব্যবহার করে APK বিল্ড করা (সবচেয়ে গুরুত্বপূর্ণ পরিবর্তন)
+      # *** এখানে ডকার ইমেজের ভার্সন নির্দিষ্ট করা হয়েছে ***
       - name: Build with Buildozer
-        uses: docker://kivy/buildozer
+        uses: docker://kivy/buildozer:3.1.0 # <-- :latest এর পরিবর্তে :3.1.0 ব্যবহার করা হয়েছে
         with:
           entrypoint: /bin/bash
           args: -c "chown -R $(id -u):$(id -g) . && buildozer android release"
