@@ -43,7 +43,7 @@ jobs:
           pip install --upgrade pip
           pip install "cython<3.0"
           pip install kivy==2.3.0
-          pip install python-for-android==2024.05.21
+          pip install python-for-android==2024.1.21
 
       # ধাপ ৫: Start.io Ads SDK ডাউনলোড করা (সবচেয়ে গুরুত্বপূর্ণ নতুন ধাপ)
       - name: Download Start.io Ads SDK
