@@ -1,57 +1,60 @@
 # ফাইলের নাম: .github/workflows/main.yml
 
-name: Build Android APK with Python-for-Android(samiul10)
+name: Build Android AAB with Start.io Ads
 
 on:
-  # "main" ব্রাঞ্চে কোড পুশ করলে স্বয়ংক্রিয়ভাবে রান হবে
   push:
     branches: [ "main" ]
-  # GitHub Actions ট্যাব থেকে ম্যানুয়ালি রান করার সুযোগ
   workflow_dispatch:
 
 jobs:
   build-android:
-    name: Build Signed Release APK with P4A
+    name: Build AAB with P4A
     runs-on: ubuntu-22.04
 
     steps:
-      # ধাপ ১: আপনার রিপোজিটরির কোড ডাউনলোড করা
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ধাপ ২: Java JDK 11 ইনস্টল করা
-      # python-for-android-এর পুরনো রেসিপিগুলোর সাথে এটি স্থিতিশীল
-      - name: Set up JDK 11
+      # ধাপ ২: Java 17 সেটআপ করা
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
 
-      # ধাপ ৩: সরাসরি Android NDK 25b ডাউনলোড এবং সেটআপ করা
-      # 'ALooper_pollAll' এরর এড়ানোর জন্য এটি সবচেয়ে নির্ভরযোগ্য পদ্ধতি
+      # ধাপ ৩: সরাসরি NDK 25b ডাউনলোড এবং সেটআপ করা
       - name: Download and set up NDK 25b
+        id: setup_ndk
         run: |
-          echo "Downloading NDK r25b..."
-          wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-          echo "Unzipping NDK..."
+          wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
           unzip -q android-ndk-r25b-linux.zip
-          # এনভায়রনমেন্ট ভেরিয়েবল সেট করা, যাতে p4a এটি খুঁজে পায়
-          echo "ANDROID_NDK_HOME=$(pwd )/android-ndk-r25b" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25b" >> $GITHUB_ENV
           echo "NDK path set to: $(pwd)/android-ndk-r25b"
 
-      # ধাপ ৪: Python এবং প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
-      - name: Set up Python and install dependencies
+      # ধাপ ৪: Python 3.11 এবং প্রয়োজনীয় লাইব্রেরি ইনস্টল করা
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      - run: |
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
           pip install --upgrade pip
-          # Cython 3+ এর সাথে p4a-এর সামঞ্জস্যতার সমস্যা এড়াতে ভার্সন নির্দিষ্ট করা
           pip install "cython<3.0"
-          # p4a এবং kivy ইনস্টল করা
-          pip install python-for-android kivy==2.1.0
+          pip install kivy==2.3.0
+          pip install python-for-android==2024.05.21
 
-      # ধাপ ৫: রিলিজ বিল্ডের জন্য Keystore তৈরি করা
+      # ধাপ ৫: Start.io Ads SDK ডাউনলোড করা (সবচেয়ে গুরুত্বপূর্ণ নতুন ধাপ)
+      - name: Download Start.io Ads SDK
+        run: |
+          # SDK-এর জন্য একটি ফোল্ডার তৈরি করা
+          mkdir -p libs
+          # Start.io In-App Ads SDK ডাউনলোড করা (ভার্সন প্রয়োজন অনুযায়ী পরিবর্তন করতে পারেন)
+          wget https://s.start.io/publishers/sdk/inapp-sdk.aar -O libs/inapp-sdk.aar
+          echo "Start.io SDK downloaded to libs/inapp-sdk.aar"
+
+      # ধাপ ৬: Keystore তৈরি করা
       - name: Create Keystore
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
@@ -59,14 +62,14 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias $KEY_ALIAS -keyalg RSA -keysize 2048 -validity 10000 -storepass $KEY_PASSWORD -keypass $KEY_PASSWORD -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৬: P4A ব্যবহার করে সাইন করা APK বিল্ড করা (সঠিক আর্গুমেন্ট সহ)
-      - name: Build Signed APK with P4A
+      # ধাপ ৭: P4A দিয়ে AAB (Android App Bundle) বিল্ড করা
+      - name: Build AAB with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          p4a apk \
-            --requirements=python3,kivy==2.1.0,android,jnius,sqlite3,openssl,requests,pillow,pyjnius \
+          p4a aab \
+            --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl \
             --package=com.samiul.minifire \
             --name="MINI FIRE" \
             --version=1.0.0 \
@@ -76,17 +79,19 @@ jobs:
             --orientation=portrait \
             --window \
             --release \
-            --private=. \
-            --sign \
-            --keystore release.keystore \
-            --keystore_pass "$KEY_PASSWORD" \
-            --alias "$KEY_ALIAS" \
-            --alias_pass "$KEY_PASSWORD"
+            --android-api=34 \
+            --permission=INTERNET \
+            --permission=ACCESS_NETWORK_STATE \
+            --add-aar=libs/inapp-sdk.aar \
+            --keystore=release.keystore \
+            --keystore-password="$KEY_PASSWORD" \
+            --signkey-alias="$KEY_ALIAS" \
+            --signkey-password="$KEY_PASSWORD" \
+            --private=.
 
-      # ধাপ ৭: বিল্ড হওয়া APK ফাইলটিকে আর্টিফ্যাক্ট হিসেবে আপলোড করা
-      - name: Upload APK Artifact
+      # ধাপ ৮: বিল্ড হওয়া AAB ফাইল আপলোড করা
+      - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: signed-release-apk
-          path: ./*.apk
-          
+          name: p4a-signed-aab
+          path: ./*.aab
