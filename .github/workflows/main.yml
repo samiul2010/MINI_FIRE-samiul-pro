@@ -14,15 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Android SDK and NDK
-        run: |
-          echo "Using system Android tools:"
-          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
-          echo "ANDROID_NDK: $ANDROID_NDK"
-          
-          # Accept Android licenses
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
