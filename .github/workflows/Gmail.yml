@@ -1,6 +1,6 @@
 # ফাইলের নাম: .github/workflows/main.yml
 
-name: Build Android APK (Stable & Verified)
+name: Build Android APK (Stable & Verified v2)
 
 on:
   push:
@@ -13,13 +13,14 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা (নির্দিষ্ট ভার্সন)
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
+      # @v4 ব্যবহার করলে এটি সবসময় v4 সিরিজের সর্বশেষ স্থিতিশীল ভার্সন ব্যবহার করবে
       - name: Checkout repository
-        uses: actions/checkout@v4.1.7
+        uses: actions/checkout@v4
 
-      # ধাপ ২: Java 17 সেটআপ করা (আধুনিক অ্যান্ড্রয়েড বিল্ডের জন্য)
+      # ধাপ ২: Java 17 সেটআপ করা
       - name: Set up JDK 17
-        uses: actions/setup-java@v4.2.1
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -32,15 +33,16 @@ jobs:
           echo "ANDROID_NDK_HOME=$(pwd)/android-ndk-r25b" >> $GITHUB_ENV
           echo "NDK path set to: $(pwd)/android-ndk-r25b"
 
-      # ধাপ ৪: Python 3.11 সেটআপ করা (নির্দিষ্ট ভার্সন)
+      # ধাপ ৪: Python 3.11 সেটআপ করা
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.1.0
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
-      # ধাপ ৫: পাইথন লাইব্রেরির জন্য ক্যাশিং (বিল্ড দ্রুত করার জন্য)
+      # ধাপ ৫: পাইথন লাইব্রেরির জন্য ক্যাশিং (সংশোধিত ভার্সন)
+      # @v4 ব্যবহার করলে এটি সবসময় v4 সিরিজের সর্বশেষ স্থিতিশীল ভার্সন ব্যবহার করবে
       - name: Cache Pip dependencies
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/main.py') }}
@@ -55,14 +57,12 @@ jobs:
           pip install "kivy==2.3.0"
           pip install "python-for-android==2024.05.21"
 
-      # ধাপ ৭: Start.io Ads SDK ডাউনলোড করা (নতুন এবং স্থিতিশীল লিংক থেকে)
+      # ধাপ ৭: Start.io Ads SDK ডাউনলোড করা (স্থিতিশীল লিংক থেকে)
       - name: Download Start.io Ads SDK
         run: |
           mkdir -p libs
-          # Maven Central থেকে সরাসরি ডাউনলোড, এটি সবচেয়ে নির্ভরযোগ্য পদ্ধতি
           wget https://repo1.maven.org/maven2/com/startapp/inapp-sdk/4.11.4/inapp-sdk-4.11.4.aar -O libs/inapp-sdk.aar
           echo "Start.io SDK v4.11.4 downloaded successfully."
-          # ডাউনলোড সফল হয়েছে কিনা তা নিশ্চিত করার জন্য ফাইল তালিকা দেখা
           ls -l libs/
 
       # ধাপ ৮: Keystore তৈরি করা
@@ -73,7 +73,7 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASSWORD" -keypass "$KEY_PASSWORD" -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৯: P4A দিয়ে APK বিল্ড করা (আপনার অনুরোধ অনুযায়ী)
+      # ধাপ ৯: P4A দিয়ে APK বিল্ড করা
       - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
@@ -101,9 +101,9 @@ jobs:
             --private=. \
             --verbose
 
-      # ধাপ ১০: বিল্ড হওয়া APK ফাইল আপলোড করা (নির্দিষ্ট ভার্সন)
+      # ধাপ ১০: বিল্ড হওয়া APK ফাইল আপলোড করা
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4.3.4
+        uses: actions/upload-artifact@v4
         with:
           name: p4a-signed-apk
           path: ./*.apk
