@@ -51,7 +51,7 @@ jobs:
           # SDK-এর জন্য একটি ফোল্ডার তৈরি করা
           mkdir -p libs
           # Start.io In-App Ads SDK ডাউনলোড করা (ভার্সন প্রয়োজন অনুযায়ী পরিবর্তন করতে পারেন)
-          wget https://s.start.io/publishers/sdk/inapp-sdk.aar -O libs/inapp-sdk.aar
+          wget https://start.io/publishers/sdk/inapp-sdk.aar -O libs/inapp-sdk.aar
           echo "Start.io SDK downloaded to libs/inapp-sdk.aar"
 
       # ধাপ ৬: Keystore তৈরি করা
