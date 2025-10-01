@@ -1,0 +1,61 @@
+# ফাইলের নাম: .github/workflows/check-p4a.yml
+
+name: Check P4A Arguments
+
+on:
+  workflow_dispatch:  # শুধু ম্যানুয়ালি রান করা যাবে
+
+jobs:
+  check-p4a:
+    name: Check P4A Available Arguments
+    runs-on: ubuntu-22.04
+
+    steps:
+      # ধাপ ১: রিপোজিটরির কোড চেকআউট করা
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ধাপ ২: Java 17 সেটআপ করা
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ধাপ ৩: Python 3.11 সেটআপ করা
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      # ধাপ ৪: পাইথন লাইব্রেরি ইনস্টল করা
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "cython==0.29.37"
+          pip install "kivy==2.3.0"
+          pip install "python-for-android==2024.1.21"
+
+      # ধাপ ৫: P4A এর help চেক করা
+      - name: Check P4A main help
+        run: |
+          echo "=================== P4A MAIN HELP ==================="
+          p4a --help
+
+      # ধাপ ৬: P4A apk কমান্ডের help চেক করা
+      - name: Check P4A APK help
+        run: |
+          echo "=================== P4A APK HELP ==================="
+          p4a apk --help
+
+      # ধাপ ৭: P4A ভার্সন চেক করা
+      - name: Check P4A version
+        run: |
+          echo "=================== P4A VERSION ==================="
+          p4a --version
+
+      # ধাপ ৮: Available recipes চেক করা
+      - name: Check available recipes
+        run: |
+          echo "=================== AVAILABLE RECIPES ==================="
+          p4a recipes
