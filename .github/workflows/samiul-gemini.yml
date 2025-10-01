@@ -97,7 +97,6 @@ jobs:
             --keystore=release.keystore \
             --keystore-password="$KEY_PASSWORD" \
             --signkey-alias="$KEY_ALIAS" \
-            --signkey-password="$KEY_PASSWORD" \
             --private=. \
             --verbose
 
