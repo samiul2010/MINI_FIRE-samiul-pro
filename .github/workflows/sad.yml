@@ -67,7 +67,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          rm -rf android-ndk-r25b/sources/third_party/googletest/
+          find android-ndk-r25b -name "*.py" -delete && \
           p4a apk \
             --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl \
             --package=com.samiul.minifire \
@@ -87,7 +87,8 @@ jobs:
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
             --signkeypw="$KEY_PASSWORD" \
-            --private=.
+            --private=. \
+            --ignore-setup-py
 
       # ধাপ ৯: বিল্ড হওয়া APK ফাইল আপলোড করা
       - name: Upload APK Artifact
@@ -96,7 +97,7 @@ jobs:
           name: minifire-signed-apk
           path: ./*.apk
 
-      # ধাপ ১০: সাফল্য মেসেজ
+      # ধাপ ১০: সাফল্য মেসেজ ছামিউল
       - name: Success Message
         run: |
           echo "🎉 APK বিল্ড সফলভাবে সম্পন্ন হয়েছে!"
