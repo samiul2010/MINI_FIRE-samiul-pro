@@ -82,7 +82,7 @@ jobs:
             --android-api=34 \
             --permission=INTERNET \
             --permission=ACCESS_NETWORK_STATE \
-            --add-aar=libs/inapp-sdk.aar \
+            #--add-aar=libs/inapp-sdk.aar \
             --keystore=release.keystore \
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
