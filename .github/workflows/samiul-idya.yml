@@ -1,6 +1,6 @@
 # ফাইলের নাম: .github/workflows/samiul-gemini.yml
 
-name: Build Android APK (Final Fixed Version)
+name: Build Android APK (Auto Version Detection)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-android:
-    name: Build APK with P4A - Final Fix
+    name: Build APK with P4A - Auto Version
     runs-on: ubuntu-22.04
 
     steps:
@@ -46,17 +46,47 @@ jobs:
           pip install "kivy==2.3.0"
           pip install "python-for-android==2024.1.21"
 
-      # ধাপ ৬: Start.io Ads SDK ডাউনলোড করা (ফিক্সড ভার্সন)
-      - name: Download Start.io Ads SDK
+      # ধাপ ৬: Smart Start.io SDK ডাউনলোড করা (Auto Version Detection)
+      - name: Download Compatible Start.io SDK
         run: |
           mkdir -p libs
-          echo "Current directory: $(pwd)"
-          wget https://repo1.maven.org/maven2/com/startapp/inapp-sdk/4.11.4/inapp-sdk-4.11.4.aar -O libs/inapp-sdk.aar
-          echo "AAR download completed with status: $?"
-          echo "AAR file verification:"
-          ls -la libs/inapp-sdk.aar
-          echo "File size: $(wc -c < libs/inapp-sdk.aar) bytes"
-          echo "File type: $(file libs/inapp-sdk.aar)"
+          echo "Finding compatible Start.io SDK version..."
+          
+          # Available versions list (সবচেয়ে compatible থেকে শুরু)
+          VERSIONS=("4.9.3" "4.10.7" "4.8.8" "4.11.4" "4.7.0" "4.6.0" "4.5.0")
+          
+          for version in "${VERSIONS[@]}"; do
+            echo "Trying version: $version"
+            URL="https://repo1.maven.org/maven2/com/startapp/inapp-sdk/$version/inapp-sdk-$version.aar"
+            
+            # Download attempt
+            if wget --timeout=30 -O "libs/inapp-sdk-$version.aar" "$URL"; then
+              echo "✅ Successfully downloaded version $version"
+              
+              # File verification
+              if [ -s "libs/inapp-sdk-$version.aar" ]; then
+                echo "✅ File verified: $(wc -c < libs/inapp-sdk-$version.aar) bytes"
+                # Use this version
+                mv "libs/inapp-sdk-$version.aar" "libs/inapp-sdk.aar"
+                echo "SELECTED_VERSION=$version" >> $GITHUB_ENV
+                break
+              else
+                echo "❌ File empty, trying next version..."
+                rm -f "libs/inapp-sdk-$version.aar"
+              fi
+            else
+              echo "❌ Download failed for $version, trying next..."
+            fi
+          done
+          
+          # Final check
+          if [ -f "libs/inapp-sdk.aar" ]; then
+            echo "🎉 Compatible version found: $SELECTED_VERSION"
+            ls -la libs/inapp-sdk.aar
+          else
+            echo "💥 No compatible version found!"
+            exit 1
+          fi
 
       # ধাপ ৭: Keystore তৈরি করা
       - name: Create Keystore
@@ -66,24 +96,18 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASSWORD" -keypass "$KEY_PASSWORD" -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (Absolute Path সহ)
+      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (Dynamic Version)
       - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
           find android-ndk-r25b -name "*.py" -delete
-    
-          # AAR file verification before build
-          echo "=== Pre-build AAR Verification ==="
-          echo "Working directory: $(pwd)"
-          echo "AAR file exists: $(test -f libs/inapp-sdk.aar && echo 'YES' || echo 'NO')"
-          echo "AAR file size: $(wc -c < libs/inapp-sdk.aar 2>/dev/null || echo 0) bytes"
-          echo "Full AAR path: $(pwd)/libs/inapp-sdk.aar"
-    
-          # Use absolute path for AAR
+          
+          echo "Using Start.io version: $SELECTED_VERSION"
+          
           p4a apk \
-            --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl \
+            --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl,android \
             --package=com.samiul.minifire \
             --name="MINI FIRE" \
             --version=1.0.0 \
@@ -97,6 +121,7 @@ jobs:
             --permission=INTERNET \
             --permission=ACCESS_NETWORK_STATE \
             --add-aar=$(pwd)/libs/inapp-sdk.aar \
+            --extra-gradle-deps="implementation 'com.startapp:inapp-sdk:$SELECTED_VERSION'" \
             --keystore=release.keystore \
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
@@ -116,4 +141,5 @@ jobs:
         run: |
           echo "🎉 APK বিল্ড সফলভাবে সম্পন্ন হয়েছে!"
           echo "📱 APK ফাইল আপলোড করা হয়েছে আর্টিফ্যাক্ট হিসেবে"
-          echo "🔥 এখন আপনি APK ডাউনলোড করতে পারবেন"
+          echo "🔥 Start.io Version: $SELECTED_VERSION"
+          echo "🚀 এখন আপনি APK ডাউনলোড করতে পারবেন"
