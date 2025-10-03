@@ -46,12 +46,17 @@ jobs:
           pip install "kivy==2.3.0"
           pip install "python-for-android==2024.1.21"
 
-      # ধাপ ৬: Start.io Ads SDK ডাউনলোড করা
+      # ধাপ ৬: Start.io Ads SDK ডাউনলোড করা (ফিক্সড ভার্সন)
       - name: Download Start.io Ads SDK
         run: |
           mkdir -p libs
+          echo "Current directory: $(pwd)"
           wget https://repo1.maven.org/maven2/com/startapp/inapp-sdk/4.11.4/inapp-sdk-4.11.4.aar -O libs/inapp-sdk.aar
-          echo "Start.io SDK v4.11.4 downloaded successfully."
+          echo "AAR download completed with status: $?"
+          echo "AAR file verification:"
+          ls -la libs/inapp-sdk.aar
+          echo "File size: $(wc -c < libs/inapp-sdk.aar) bytes"
+          echo "File type: $(file libs/inapp-sdk.aar)"
 
       # ধাপ ৭: Keystore তৈরি করা
       - name: Create Keystore
@@ -61,13 +66,22 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASSWORD" -keypass "$KEY_PASSWORD" -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (সরাসরি সঠিক আর্গুমেন্ট)
+      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (Absolute Path সহ)
       - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_ALIAS }}
         run: |
-          find android-ndk-r25b -name "*.py" -delete && \
+          find android-ndk-r25b -name "*.py" -delete
+    
+          # AAR file verification before build
+          echo "=== Pre-build AAR Verification ==="
+          echo "Working directory: $(pwd)"
+          echo "AAR file exists: $(test -f libs/inapp-sdk.aar && echo 'YES' || echo 'NO')"
+          echo "AAR file size: $(wc -c < libs/inapp-sdk.aar 2>/dev/null || echo 0) bytes"
+          echo "Full AAR path: $(pwd)/libs/inapp-sdk.aar"
+    
+          # Use absolute path for AAR
           p4a apk \
             --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl \
             --package=com.samiul.minifire \
@@ -82,7 +96,7 @@ jobs:
             --android-api=34 \
             --permission=INTERNET \
             --permission=ACCESS_NETWORK_STATE \
-            --add-aar=libs/inapp-sdk.aar \
+            --add-aar=$(pwd)/libs/inapp-sdk.aar \
             --keystore=release.keystore \
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
@@ -97,7 +111,7 @@ jobs:
           name: minifire-signed-apk
           path: ./*.apk
 
-      # ধাপ ১০: সাফল্য মেসেজ ছামিউল
+      # ধাপ ১০: সাফল্য মেসেজ
       - name: Success Message
         run: |
           echo "🎉 APK বিল্ড সফলভাবে সম্পন্ন হয়েছে!"
