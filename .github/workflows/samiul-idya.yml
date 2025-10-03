@@ -121,7 +121,6 @@ jobs:
             --permission=INTERNET \
             --permission=ACCESS_NETWORK_STATE \
             --add-aar=$(pwd)/libs/inapp-sdk.aar \
-            --extra-gradle-deps="implementation 'com.startapp:inapp-sdk:$SELECTED_VERSION'" \
             --keystore=release.keystore \
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
