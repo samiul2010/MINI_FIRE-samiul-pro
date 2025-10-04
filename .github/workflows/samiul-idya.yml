@@ -1,6 +1,6 @@
 # ফাইলের নাম: .github/workflows/samiul-gemini.yml
 
-name: Build Android APK (Auto Version Detection)
+name: Build Android APK (Option 2 - AAR Integration)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-android:
-    name: Build APK with P4A - Auto Version
+    name: Build APK with P4A - Option 2
     runs-on: ubuntu-22.04
 
     steps:
@@ -96,7 +96,7 @@ jobs:
         run: |
           keytool -genkey -v -keystore release.keystore -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASSWORD" -keypass "$KEY_PASSWORD" -dname "CN=Md Samiul Islam, OU=Development, O=SamiulDev, L=Dhaka, ST=Dhaka, C=BD" -noprompt
 
-      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (Dynamic Version)
+      # ধাপ ৮: P4A দিয়ে APK বিল্ড করা (Option 2 - Alternative AAR Integration)
       - name: Build APK with P4A
         env:
           KEY_PASSWORD: ${{ secrets.RELEASE_PASSWORD }}
@@ -106,8 +106,14 @@ jobs:
           
           echo "Using Start.io version: $SELECTED_VERSION"
           
+          echo "=== Step 1: Copying AAR to p4a dist ==="
+          mkdir -p /home/runner/.local/share/python-for-android/dists/minifire/libs
+          cp libs/inapp-sdk.aar /home/runner/.local/share/python-for-android/dists/minifire/libs/
+          echo "AAR copied successfully"
+          
+          echo "=== Step 2: Building APK with internal AAR path ==="
           p4a apk \
-            --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl,android \
+            --requirements=python3,kivy==2.3.0,jnius,sqlite3,openssl \
             --package=com.samiul.minifire \
             --name="MINI FIRE" \
             --version=1.0.0 \
@@ -120,7 +126,7 @@ jobs:
             --android-api=34 \
             --permission=INTERNET \
             --permission=ACCESS_NETWORK_STATE \
-            --add-aar=$(pwd)/libs/inapp-sdk.aar \
+            --add-aar=/home/runner/.local/share/python-for-android/dists/minifire/libs/inapp-sdk.aar \
             --keystore=release.keystore \
             --keystorepw="$KEY_PASSWORD" \
             --signkey="$KEY_ALIAS" \
